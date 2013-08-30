@@ -1,0 +1,56 @@
+% manual for parallel computing with R
+
+
+
+% latex document preparation
+% --------------------------
+
+
+
+\documentclass[a4paper, 12pt]{article}
+
+\SweaveInput{000_R_latex_preparation.Rnw}
+
+\usepackage[margin=2.5cm]{geometry} % change page margin
+
+\title{Parallel computing with R
+\footnote{Git commit hash: \Sexpr{print(git_hash)}}
+}
+
+\author{Matti}
+
+
+
+% document
+% --------
+
+
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\maketitle
+
+\clearpage
+
+\tableofcontents
+
+\clearpage
+
+\listoffigures
+
+\clearpage
+
+\listoftables
+
+\clearpage
+
+
+
+\SweaveInput{005_sampling_sites.Rnw}
+
+\clearpage
+
+
+
+\end{document}

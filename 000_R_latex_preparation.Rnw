@@ -196,19 +196,24 @@ bold_table_rows = function(inputTable, rowIndices, digits = 5, format = "f") {
 
 <<SweaveListingsPreparations, results=tex, echo=FALSE, strip.white=FALSE>>=
 require(SweaveListingUtils)
+# SweaveListingOptions has to be before SweaveListingPreparations
+SweaveListingOptions(Recomd.Keywordstyle = "{\\color{Rkeywordcolor}}",
+                     interm.Keywordstyle = "{\\color{Rkeywordcolor}}")
 SweaveListingPreparations(withVerbatim = FALSE,
                           withSchunkDef = TRUE,
                           LineLength = 60,
-                          Rcommentcolor = c(0, 0.5, 0),
-                          Rcolor = c(0, 0, 0),
+                          Rcommentcolor = c(0, 0, 0),
+                          Rcolor = c(0.4, 0.4, 0.8),
                           Routcolor = c(0.5, 0, 0),
                           Rcode = c(getSweaveListingOption("Rcode"),
                                    fontshape = "n"),
                           Rin = c(getSweaveListingOption("Rin"),
                                   basicstyle = "\\color{Rcolor}\\Rsize\\ttfamily",
+                                  keywordstyle = "{\\color{Rkeywordcolor}}", 
                                   backgroundcolor="\\color{Rgray}"),
                           Rout = c(getSweaveListingOption("Rout"),
-                                  basicstyle = "\\color{Rcolor}\\Rsize\\ttfamily", 
+                                  basicstyle = "\\color{Routcolor}\\Rsize\\ttfamily",
+                                  keywordstyle = "{}",
                                   backgroundcolor="\\color{Rgray}"),
                           Rset = c(getSweaveListingOption("Rset"),
                                    basicstyle = "{\\ttfamily}",
@@ -218,12 +223,16 @@ SweaveListingPreparations(withVerbatim = FALSE,
                                    commentstyle = "{\\color{Rcommentcolor}\\ttfamily}",
                                    keywordstyle = "{\\color{Rkeywordcolor}}")
                           )
+
 @
+
+\lstdefinestyle{Routstyle}{style=RoutstyleO,breaklines=true}
 
 % from http://stackoverflow.com/questions/741985/latex-source-code-listing-like-in-professional-books
 
-\lstset{xleftmargin=1em,
-        xrightmargin=1em}
+\lstset{xleftmargin=0.5em,
+        xrightmargin=0.5em,
+        frame=leftline}
 
 \newcommand\Rsize{\footnotesize}
 
@@ -235,7 +244,9 @@ SweaveListingPreparations(withVerbatim = FALSE,
 
 \definecolor{Rgray}{rgb}{0.95, 0.95, 0.95}
 
-\definecolor{Rkeywordcolor}{rgb}{0.5, 0, 0.5}
+\definecolor{Routcolor}{rgb}{0.4, 0.4, 0.4}
+
+\definecolor{Rkeywordcolor}{rgb}{0.6, 0, 0.6}
 
 \definecolor{RRecomdcolor}{rgb}{0.5, 0, 0.5}
 

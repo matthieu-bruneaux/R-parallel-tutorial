@@ -1,0 +1,139 @@
+\section{Parallel computing on a local computer}
+%-----------------------------------------------
+
+
+
+\subsection{When parallel computing can be used?}
+%------------------------------------------------
+
+
+
+Parallel computing enables to do calculations simultaneously on several cores.
+If a desktop computer has a multi-core processor, it usually uses only one
+core at a time to run an R session. However, for certain analyses, it is 
+possible to take advantage of the presence of several cores and to run 
+independent parts of an analysis on different cores, simultaneously.
+One quick-and-dirty way of using several cores is to manually start as many
+R sessions as available cores; a much more simple, robust and elegant solution
+is to use one of the R packages for parallel computing. When scaling an 
+analysis on 16, 32 or more cores on a computer grid, manually starting and 
+managing R scripts is not a good option.
+
+Not all analyses can be performed using parallel computing. Some analyses 
+reauire sequential steps, and each step depends on the result of the previous
+one. In this case, it is not possible to distribute the calculation load on 
+independent processes. However, analyses with heavy calculation requirements 
+often consist of a few analysis steps which are repeated a large number of
+time, independently, on different input. Here are some examples:
+
+\begin{itemize}
+  \item Gst values are available along the genome for your favourite species.
+  You want to perform a kernel smoothing and some permutation testing to
+  detect significantly high Gst for each chromosome. The analyses for each
+  chromosome are independent and can be performed on separate cores.
+  \item You want to test the robustness of your results by bootstrapping.
+  You have to rerun your analysis a large number of time on resampled datasets
+  produced from the original observed dataset. Each analysis on a resampled
+  dataset is independent of the others, and all the bootstrap simulations can
+  be distributed among several cores. 
+\end{itemize}
+
+After the parallel step, another step is often necessary to gather the results
+produced independently (e.g. concatenate the results for each chromosome into
+a single table or pool the results of all the bootstrap simulations to 
+calculate p-values). However, the most time-consuming step is usually the one
+which can be distributed on multiple cores.
+
+
+
+\subsection{General approach to parallel computing with R}
+%---------------------------------------------------------
+
+
+
+\subsubsection{Packages}
+%-----------------------
+
+
+
+A list of useful packages can be found on the CRAN webpage concerning R and 
+high performance computing 
+(\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}).
+There are  many different options; I will focus on the \texttt{snow} package
+since I managed to use this one both on a CSC server (Taito) and on my desktop
+computer and its setup is quite simple.
+
+
+
+\subsubsection{Writing parallel code}
+%------------------------------------
+
+
+
+The code used for parallel computing has to be usable through a call to the
+\texttt{lapply} function. While such code is just regular R code and can also
+be used for computing on a single core, it is not the coding style used most
+commonly by biologists using R. In practice, working code used for a given 
+analysis often has to be refactored before being usable with parallel 
+computing. The refactoring is quite simple and forces to have a clear code,
+using functions.
+
+\texttt{lapply} applies a function to each element of a list or of a 
+vector. See \texttt{?lapply} for the help.
+
+<<label=lapply.example>>=
+### Prepare a list with iris data ###
+# "iris" is an example dataset shipped with R.
+str(iris, 1)
+# there are three different species in this dataset. We will
+# separate the corresponding data into three elements of one list.
+# first, create an empty list to store the data for each species
+sp.data = list()
+# for each species, store the corresponding subset of data from the 
+# iris dataset into the list
+for (sp in levels(iris$Species)) {
+  sp.data[[sp]] = subset(iris, iris$Species == sp)
+}
+# check the structure of the list
+# the list should now have three elements, each element being a data 
+# frame corresponding to a given species
+str(sp.data, 1)
+### Apply a function to each element of the list ###
+# define a function which will be applied to each element of the 
+# list this function calculates the mean of the values in the column
+# Petal.Length.
+calculate.mean.petal.length = function(x) {
+  mean(x$Petal.Length)
+}
+# apply the function to the list
+mean.lengths = lapply(sp.data, calculate.mean.petal.length)
+# display the content of the results
+mean.lengths
+@ 
+
+use of list and apply function
+
+vectorization
+
+code refactorisation
+
+data export to each core
+
+not calculating faster, but more at the same time
+
+
+
+\subsection{Practical example: parallel computing with the \texttt{snow} 
+package}
+%-----------------------------------------------------------------------
+
+
+
+examples
+
+notes
+
+benchmark
+
+random number generator (rlecuyer)
+

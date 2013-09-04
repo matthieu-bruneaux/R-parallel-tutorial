@@ -1,0 +1,6 @@
+\section{General approaches to speed-up R code}
+%----------------------------------------------
+
+
+
+To do

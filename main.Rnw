@@ -2,6 +2,13 @@
 
 
 
+% customization
+%--------------
+
+
+
+
+
 % latex document preparation
 % --------------------------
 
@@ -29,6 +36,10 @@
 \begin{document}
 \SweaveOpts{concordance=TRUE}
 
+
+
+
+
 \maketitle
 
 \clearpage
@@ -47,7 +58,15 @@
 
 
 
-\SweaveInput{005_sampling_sites.Rnw}
+\SweaveInput{010_parallel_local_computer.Rnw}
+
+
+
+\SweaveInput{020_parallel_CSC_server.Rnw}
+
+
+
+\SweaveInput{030_approaches_speed-up_code.Rnw}
 
 \clearpage
 

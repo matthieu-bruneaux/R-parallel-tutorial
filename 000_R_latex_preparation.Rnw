@@ -1,0 +1,269 @@
+
+% some preparation with R
+% -----------------------
+
+
+
+% get the git commit number
+
+<< echo = FALSE >>=
+
+library(cacheSweave)
+
+a = pipe("git rev-parse HEAD")
+
+git_hash = readLines(a)
+
+close(a)
+
+root_dir = "/home/matthieu/documents/turku_lab/experiments/projects_running_main/9spines_Estonia_sept_2011_respirometry/"
+
+data_dir = paste(root_dir, "data/", sep = "")
+
+cache_dir = paste(root_dir, "cache_R/", sep = "")
+
+dir.create(cache_dir)
+
+source_path = paste(root_dir, "source.R", sep = "")
+
+source(source_path)
+
+options(continue = " ", prompt = " ")
+
+set.seed(0) # to have reproducible random numbers
+
+setCacheDir("./sweave_cache/")
+
+# sanitise underscores
+
+sanit_underscore = function(x) {
+  
+  gsub("_", "\\\\_", x)
+  
+}
+
+# conditional formatting for p-values
+
+# modified from https://stat.ethz.ch/pipermail/r-help/2011-June/279822.html
+
+bold_expression = function(x, indices = vector(), digits = 4, format = "f") {
+  
+  # do a conditional formatting for elements with index in indices
+  
+  n = length(x)
+
+  results = vector()
+  
+  for (i in 1:n) {
+    
+    if (i %in% indices) {
+      
+      if (is.character(x[i])) {
+        
+        results[i] = paste("\\textbf{", x[i], "}", sep = "")
+        
+      }
+      
+      else {
+      
+        results[i] = paste("\\textbf{", formatC(x[i], digits = digits, format = format), "}", sep = "")
+      
+      }
+      
+    }
+    
+    else {
+      
+      if (is.character(x[i])) {
+        
+        results[i] = paste("\\textmd{", x[i], "}", sep = "")
+        
+      }
+      
+      else {
+      
+        results[i] = paste("\\textmd{", formatC(x[i], digits = digits, format = format), "}", sep = "")
+      
+      }
+      
+    }
+    
+  }
+  
+  results
+  
+}
+
+bold_table_rows = function(inputTable, rowIndices, digits = 5, format = "f") {
+  
+  # Modify a table to display some rows in bold font in latex
+  
+  # digits can be a single number or a vector
+  
+  # format can be "f" for float or "e" for scientific notation
+  
+  n = ncol(inputTable)
+  
+  if (length(digits) == 1) {
+    
+    digits = rep(digits, n)
+    
+  }
+  
+  if (length(format) == 1) {
+    
+    format = rep(format, n)
+    
+  }
+  
+  for (i in 1:n) {
+    
+    inputTable[, i] = bold_expression(inputTable[, i], indices = rowIndices, 
+                                      digits = digits[i], format = format[i])
+    
+  }
+  
+  # return
+  
+  inputTable
+  
+}
+
+@
+
+
+
+
+% Latex preparation
+% -----------------
+
+
+
+
+\usepackage{graphicx} % to change graph width
+
+\newcommand\RplotWidth{0.6\textwidth} % to use with \includegraphics
+
+\newcommand\RsubplotWidth{0.45\textwidth} % to use with \includegraphics in \subfloat
+
+\newcommand\RthirdPlotWidth{0.25\textwidth} % to use with \includegraphics in \subfloat
+
+\newcommand\RlandscapePlotWidth{1.2\textwidth} % to use with \includegraphics for landscape plots
+
+\newcommand\RstripePlotWidth{0.9\textwidth} % for very wide figures (stripes)
+
+\newcommand\R{\texttt{R}} % to write R
+
+\newcommand\vs{\textit{vs.}} % versus
+
+\newcommand\ie{\textit{i.e.}} % i.e.
+
+\newcommand\eg{\textit{e.g.}}
+
+\newcommand\modriku{M\~{o}driku} % Modriku
+
+\newcommand\polula{P\~{o}lula} % Polula
+
+\newcommand\kunda{Kunda}
+
+\newcommand\lobi{Lobi}
+
+\usepackage{amsmath} % for unbreakable dash
+
+\newcommand\pval{\textit{p}\nobreakdash-value} % p-value
+
+\newcommand\pvals{\textit{p}\nobreakdash-values} % p-value
+
+\usepackage{subfig} % for multiple figures in one
+
+\usepackage[pdfborder={0 0 0}]{hyperref} % for hypertext links within the document
+
+\hypersetup{colorlinks, urlcolor=blue} % for url coloration
+
+\usepackage{longtable} % for long tables over several pages
+
+\usepackage{textcomp} % for degree symbol using \textdegree
+
+\usepackage[utf8x]{inputenc} % for signif.codes in R (from http://grokbase.com/t/r/r-help/09cpmknfce/r-sweave-font-problems-with-signif-codes-lines)
+
+\RequirePackage{fancyvrb}
+
+\RequirePackage{listings}
+
+%\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE}
+
+<<SweaveListingsPreparations, results=tex, echo=FALSE, strip.white=FALSE>>=
+require(SweaveListingUtils)
+SweaveListingPreparations(withVerbatim = FALSE,
+                          withSchunkDef = TRUE,
+                          LineLength = 60,
+                          Rcommentcolor = c(0, 0.5, 0),
+                          Rcolor = c(0, 0, 0),
+                          Routcolor = c(0.5, 0, 0),
+                          Rcode = c(getSweaveListingOption("Rcode"),
+                                   fontshape = "n"),
+                          Rin = c(getSweaveListingOption("Rin"),
+                                  basicstyle = "\\color{Rcolor}\\Rsize\\ttfamily",
+                                  backgroundcolor="\\color{Rgray}"),
+                          Rout = c(getSweaveListingOption("Rout"),
+                                  basicstyle = "\\color{Rcolor}\\Rsize\\ttfamily", 
+                                  backgroundcolor="\\color{Rgray}"),
+                          Rset = c(getSweaveListingOption("Rset"),
+                                   basicstyle = "{\\ttfamily}",
+                                   commentstyle = "{\\color{Rcommentcolor}\\ttfamily}",
+                                   keywordstyle = "{\\color{Rkeywordcolor}}"),
+                          Rdset = c(getSweaveListingOption("Rdset"),
+                                   commentstyle = "{\\color{Rcommentcolor}\\ttfamily}",
+                                   keywordstyle = "{\\color{Rkeywordcolor}}")
+                          )
+@
+
+% from http://stackoverflow.com/questions/741985/latex-source-code-listing-like-in-professional-books
+
+\lstset{xleftmargin=1em,
+        xrightmargin=1em}
+
+\newcommand\Rsize{\footnotesize}
+
+\usepackage[dvipsnames,x11names]{xcolor}
+
+\definecolor{darkred}{rgb}{0.545,0,0}
+
+\definecolor{midnightblue}{rgb}{0.098,0.098,0.439} 
+
+\definecolor{Rgray}{rgb}{0.95, 0.95, 0.95}
+
+\definecolor{Rkeywordcolor}{rgb}{0.5, 0, 0.5}
+
+\definecolor{RRecomdcolor}{rgb}{0.5, 0, 0.5}
+
+\definecolor{Rbcolor}{rgb}{0.5, 0, 0.5}
+
+
+% http://tex.stackexchange.com/questions/39276/background-color-for-fancyvrb
+
+
+% http://tex.stackexchange.com/questions/81923/minted-how-to-pass-latex-commands-via-newminted-and-how-to-use-different-style
+
+\SweaveOpts{width = 5, height = 5, prefix.string = sweave, trace=true, cache=true}
+
+\AtBeginDocument{ % http://r.789695.n4.nabble.com/Sweave-and-Slides-Beamer-td3451049.html
+
+%\DefineVerbatimEnvironment{Sinput}{Verbatim} {}
+
+%\DefineVerbatimEnvironment{Soutput}{Verbatim}{}
+
+%\DefineVerbatimEnvironment{Scode}{Verbatim}{}
+
+\fvset{listparameters={\setlength{\topsep}{0pt}}} % from Sweave-customization-1.pdf
+
+\renewenvironment{Schunk}{\vspace{\topsep}\setlength{\leftmargin}{2em}}{\vspace{\topsep}}
+
+% see http://stackoverflow.com/questions/4808052/sweave-syntax-highlighting-in-output
+% for more formatting
+
+% from http://r.789695.n4.nabble.com/Colors-in-Sweave-td865316.html
+
+}

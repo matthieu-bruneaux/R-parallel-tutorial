@@ -1,9 +1,9 @@
-\section{Parallel computing on a local computer}
-%-----------------------------------------------
+\section{Parallel computing with R}
+%----------------------------------
 
 
 
-\subsection{When parallel computing can be used?}
+\subsection{When can parallel computing be used?}
 %------------------------------------------------
 
 
@@ -27,7 +27,7 @@ often consist of a few analysis steps which are repeated a large number of
 time, independently, on different input. Here are some examples:
 
 \begin{itemize}
-  \item Gst values are available along the genome for your favourite species.
+  \item G$_{st}$ values are available along the genome for your favourite species.
   You want to perform a kernel smoothing and some permutation testing to
   detect significantly high Gst for each chromosome. The analyses for each
   chromosome are independent and can be performed on separate cores.
@@ -46,8 +46,8 @@ which can be distributed on multiple cores.
 
 
 
-\subsection{General approach to parallel computing with R}
-%---------------------------------------------------------
+\subsection{Approach to parallel computing with R used in this document}
+%-----------------------------------------------------------------------
 
 
 
@@ -65,75 +65,28 @@ computer and its setup is quite simple.
 
 
 
-\subsubsection{Writing parallel code}
-%------------------------------------
+\subsubsection{Using \texttt{lapply} in R code}
+%----------------------------------------------
 
 
 
-The code used for parallel computing has to be usable through a call to the
-\texttt{lapply} function. While such code is just regular R code and can also
-be used for computing on a single core, it is not the coding style used most
-commonly by biologists using R. In practice, working code used for a given 
-analysis often has to be refactored before being usable with parallel 
-computing. The refactoring is quite simple and forces to have a clear code,
-using functions.
+The approach explained in this document relies on the use on the \texttt{lapply}
+R function. This function is part of the \texttt{base} package but is seldom 
+used by R users at the beginning of their learning.
 
 \texttt{lapply} applies a function to each element of a list or of a 
-vector. See \texttt{?lapply} for the help.
+vector (see \texttt{?lapply} for the complete documentation). An efficient use 
+of \texttt{lapply} requires a good understanding of the \texttt{list} objects,
+which is very easy to acquire but might seem daunting to users without 
+any prior experience with this structure. Using \texttt{lapply} tends to 
+produce cleaner and better code - cleaner since the user has to structure the
+data into lists and to divide its code into separate functions, and better 
+because the code is easier to read and to debug - and is of interest even for
+code which is not intended to be used on multiple cores.
 
-<<label=lapply.example>>=
-### Prepare a list with iris data ###
-# "iris" is an example dataset shipped with R.
-str(iris, 1)
-# there are three different species in this dataset. We will
-# separate the corresponding data into three elements of one list.
-# first, create an empty list to store the data for each species
-sp.data = list()
-# for each species, store the corresponding subset of data from the 
-# iris dataset into the list
-for (sp in levels(iris$Species)) {
-  sp.data[[sp]] = subset(iris, iris$Species == sp)
-}
-# check the structure of the list
-# the list should now have three elements, each element being a data 
-# frame corresponding to a given species
-str(sp.data, 1)
-### Apply a function to each element of the list ###
-# define a function which will be applied to each element of the 
-# list this function calculates the mean of the values in the column
-# Petal.Length.
-calculate.mean.petal.length = function(x) {
-  mean(x$Petal.Length)
-}
-# apply the function to the list
-mean.lengths = lapply(sp.data, calculate.mean.petal.length)
-# display the content of the results
-mean.lengths
-@ 
-
-use of list and apply function
-
-vectorization
-
-code refactorisation
-
-data export to each core
-
-not calculating faster, but more at the same time
-
-
-
-\subsection{Practical example: parallel computing with the \texttt{snow} 
-package}
-%-----------------------------------------------------------------------
-
-
-
-examples
-
-notes
-
-benchmark
-
-random number generator (rlecuyer)
-
+Running code which already uses \texttt{lapply} on multiple cores requires only
+a few modifications. Running code which is already working fine but without
+using \texttt{lapply} requires a bit more work to refactor it before being
+able to use it on multiple cores, but even then the amount of work is 
+relatively minor and involves mainly a wrapping of the analysis into a main 
+function and a storage of the data into a suitable list structure.

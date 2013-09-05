@@ -48,28 +48,46 @@
 
 \clearpage
 
-\listoffigures
+%\listoffigures
+
+%\clearpage
+
+%\listoftables
+
+%\clearpage
+
+
+
+<<results=tex, echo=FALSE>>=
+# library loading
+require(rbenchmark)
+
+# clean up
+unloadNamespace("SweaveListingUtils")
+@
+
+
+\SweaveInput{010_parallel_computing_with_R.Rnw}
 
 \clearpage
 
-\listoftables
+\SweaveInput{020_R_basics_for_parallel_code.Rnw}
 
 \clearpage
 
+\SweaveInput{030_parallel_computing_on_a_local_computer.Rnw}
 
+\clearpage
 
-\SweaveInput{010_parallel_local_computer.Rnw}
+\SweaveInput{040_parallel_computing_on_CSC_servers.Rnw}
 
+\clearpage
 
-
-\SweaveInput{020_parallel_CSC_server.Rnw}
-
-
-
-\SweaveInput{030_approaches_speed-up_code.Rnw}
+\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
 
 \clearpage
 
 
 
 \end{document}
+

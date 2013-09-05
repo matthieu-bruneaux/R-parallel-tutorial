@@ -1,0 +1,373 @@
+\section{R basics for parallel code}
+%-----------------------------------
+
+
+
+This section describes the basics needed to run code on multiple cores using
+the \texttt{lapply} approach. It covers list creation and manipulation,
+\texttt{lapply} call and also introduces how to benchmark some code.
+
+
+
+\subsection{Basic list manipulation}
+%-----------------------------------
+
+
+
+Lists can be seen as sophisticated R vectors. A vector in R can store a 
+sequence of objects of the same type (e.g. all numbers or all strings), 
+but cannot store objects of different
+types. A list can store objects of different types. Below is a short 
+introduction about vectors and lists in R.
+
+A vector can be created using
+the \texttt{c()} function to combine values.
+
+<<>>=
+x = c(1, 4, 2, 5)
+x
+class(x)
+@
+
+A vector can store numbers or strings.
+
+<<>>=
+x = c(1, 4, 2, 5)
+x
+class(x)
+y = c("sweave", "R", "latex", "knitr")
+y
+class(y)
+@
+
+An element from a vector can be accessed with the \texttt{[]} notation.
+
+<<>>=
+y
+y[1]
+y[2:4]
+y[c(2, 4)]
+@
+
+However, a vector cannot mix different types of objects:
+
+<<>>=
+z = c(1, 4, "sweave", "R")
+z
+class(z)
+@
+
+If we try to mix numbers and strings in a single vector, R automatically
+convert the numbers to strings.
+
+A list can also store a sequence of objects, but those objects can be of different
+types. A list can be created using the \texttt{list()} function.
+
+<<>>=
+lst = list(1, 4, "sweave", "R")
+class(lst)
+@
+
+An element from a list can be accessed using the \texttt{[[]]} notation.
+
+<<>>=
+length(lst)
+lst[[1]]
+lst[[3]]
+@
+
+A list does not modify the type of its elements.
+
+<<>>=
+class(lst[[1]])
+class(lst[[3]])
+@
+
+An interesting feature of lists is that each element can be named and 
+retrieved by name. To retrieve an element by its name, we can use the
+\texttt{[[]]} or \texttt{\$} notation.
+
+<<>>=
+lst = list("player" = c("Socrates", "Karl Marx"), 
+           "goals" = c(2, 3))
+str(lst) # str() displays the structure of an object
+lst[["player"]]
+lst$goals
+@
+
+Elements from a named list can still be retrieved by their index.
+
+<<>>=
+names(lst)
+lst[[1]]
+lst[[2]]
+@
+
+Elements can be added after the creation of the list.
+
+<<>>=
+lst[["team"]] = c("Greece", "Germany")
+names(lst)
+lst$team
+lst[[3]]
+@
+
+A new named element is automatically appended after the last element.
+An element can also be added using an index number.
+
+<<>>=
+lst[[4]] = c("wine", "beer")
+lst[[7]] = c("Athens", "Berlin")
+str(lst)
+@
+
+If an element is added with an index number greater than the last element
+index plus one, \texttt{NULL} objects are automatically inserted in between.
+
+The names of the elements of a list and the elements themselves can also 
+be modified afterwards.
+
+<<>>=
+names(lst)
+names(lst)[4] = "beverage"
+names(lst)[7] = "capital.city"
+str(lst)
+lst[[7]][2] = "Trier"
+names(lst)[c(4, 7)] = c("preferred.beverage", "birth.place")
+str(lst)
+@
+
+Lists are sequences of objects, and as such it is possible to iterate over
+each object contained in a list.
+
+<<>>=
+for (object in lst) {
+  print(object[1]) # print the first element of each object
+}
+@
+
+
+
+\subsection{Building a simple list from an existing dataset}
+%-----------------------------------------------------------
+
+
+
+Running parallel code often requires to store an existing dataset (stored
+in a file and loaded using \texttt{read.table} for example) into a list,
+dividing the original dataset into separated list elements.
+
+\texttt{iris} is a dataset shipped with R that we will use in this short
+example.
+
+<<>>=
+str(iris, 1)
+@
+
+There are three different species in this dataset. We will separate the 
+data specific to each species into three elements stored into one list.
+First, let's create an empty list to store the data for each species.
+
+<<>>=
+sp.data = list()
+@
+
+For each species, we now store the corresponding subset from the 
+\texttt{iris} dataset into the list:
+
+<<>>=
+for (sp in levels(iris$Species)) {
+  sp.data[[sp]] = subset(iris, iris$Species == sp)
+}
+@
+
+The list should now have three elements, each element being a data 
+frame corresponding to a given species
+
+<<>>=
+str(sp.data, 1)
+@
+
+
+
+\subsection{Applying a function to each element of a list: \texttt{lapply}}
+%--------------------------------------------------------------------------
+
+
+
+We want to calculate the average petal length for each iris species. For
+this, we first define a function that will calculate the average value
+for the column \texttt{Petal.Length} in a data frame.
+
+<<>>=
+calculate.mean.petal.length = function(x) {
+  mean(x$Petal.Length)  
+}
+@
+
+We can then use a simple approach using a loop on the original dataset:
+
+<<>>=
+# prepare the data frame to store the results
+mean.lengths = data.frame(sp = vector(), petal.length = vector())
+row.i = 1
+# loop through the species
+for (sp in levels(iris$Species)) {
+  # get the data subset for a given species
+  sub.data = subset(iris, iris$Species == sp)
+  # apply the function
+  result = calculate.mean.petal.length(sub.data)
+  # store the result
+  mean.lengths[row.i, ] = c(sp, result)
+  row.i = row.i + 1
+}
+# display the results
+mean.lengths
+@
+
+A more elegant approach is to use \texttt{lapply} to apply the function on 
+each element of the list that we built previously.
+
+<<>>=
+# apply the function to each element of the list
+mean.lengths = lapply(sp.data, calculate.mean.petal.length)
+# display the results
+mean.lengths
+@ 
+
+In the \texttt{lapply} approach, the data organization and the analysis are 
+clearly separated. The code is already a bit easier to read in this simple
+example, but the gain in readibility is usually more important in more complex
+code.
+
+
+
+\subsection{Benchmarking code}
+%-----------------------------
+
+
+
+Benchmarking is useful to determine how fast some pieces of code are run, and
+to compare different implementations of the same analysis to choose the 
+fastest one. The \texttt{rbenchmark} package provides a function to easily 
+benchmark R code.
+
+Benchmarked code is usually a small piece of code which is very fast to run
+in itself but that is used a very large number of times in an analysis.
+If this piece of code can be improved to run faster, the whole analysis run
+time can be substantially improved. Since one unit run of the piece of code 
+of interest is usually very fast, it is hard to compare two different 
+implementations of it just with a single unit run. The \texttt{benchmark} 
+function enables to replicate unit runs of different implementations of the 
+code of interest and provides a convenient summary
+comparison of the execution times.
+
+Here is a small example of the use of the \texttt{benchmark} function in
+which we compare two different implementation of a function to 
+calculate the mean of a vector.
+
+<<>>=
+# R built-in function
+mean.R.function = function(x) {
+  mean(x)
+}
+# manual coding
+mean.manual.loop = function(x) {
+  x.sum = 0
+  for (i in x) {
+    x.sum = x.sum + i
+  }
+  x.sum / length(x)
+}
+# prepare a test vector
+x = rnorm(1000)
+# run the benchmark
+library(rbenchmark)
+bmk = benchmark(mean.R.function(x), mean.manual.loop(x),
+                columns = c("test", "replications", 
+                            "elapsed", "relative"),
+                order = "relative",
+                replications = 1000)
+bmk
+@
+
+The functions are run \Sexpr{bmk$replications[1]} times. The function using
+the R built-in function is the fastest one, and the function using the 
+manually-coded loop is \Sexpr{round(bmk$relative[2], digits = 0)} times
+slower than the R built-in.
+
+We can use this \texttt{benchmark} function to compare the two previous
+methods to calculate the mean petal length of each iris species.
+
+<<>>=
+# first approach
+simple.approach = function(dataset) {
+  # prepare the data frame to store the results
+  mean.lengths = data.frame(sp = vector(), petal.length = vector())
+  row.i = 1
+  # loop through the species
+  for (sp in levels(dataset$Species)) {
+    # get the data subset for a given species
+    sub.data = subset(dataset, dataset$Species == sp)
+    # apply the function
+    result = calculate.mean.petal.length(sub.data)
+    # store the result
+    mean.lengths[row.i, ] = c(sp, result)
+    row.i = row.i + 1
+  }
+  # return the results
+  mean.lengths
+}
+simple.approach(iris)
+# second approach
+lapply.approach = function(dataset) {
+  # prepare the data
+  sp.data = list()
+  for (sp in levels(dataset$Species)) {
+    sp.data[[sp]] = subset(dataset, dataset$Species == sp)
+  }
+  # apply the function to each element of the list
+  mean.lengths = lapply(sp.data, calculate.mean.petal.length)
+  # return the results
+  mean.lengths
+}
+lapply.approach(iris)
+# benchmark
+bmk = benchmark(simple.approach(iris), lapply.approach(iris),
+                columns = c("test", "replications", 
+                            "elapsed", "relative"),
+                order = "relative",
+                replications = 100)
+bmk
+@
+
+The approach using \texttt{lapply} is a bit faster than the other one.
+However, we should bear in mind that this is a very simple example and 
+that the main gain in time resulting from \texttt{lapply} is the possibility
+to run the code on multiple cores at the same time.
+
+
+
+vectorization
+
+code refactorisation
+
+data export to each core
+
+not calculating faster, but more at the same time
+
+
+
+\subsection{Practical example: parallel computing with the \texttt{snow} 
+package}
+%-----------------------------------------------------------------------
+
+
+
+examples
+
+notes
+
+benchmark
+
+random number generator (rlecuyer)

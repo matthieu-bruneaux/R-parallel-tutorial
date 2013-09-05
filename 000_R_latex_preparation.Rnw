@@ -28,7 +28,7 @@ source_path = paste(root_dir, "source.R", sep = "")
 
 source(source_path)
 
-options(continue = " ", prompt = " ")
+options(continue = " ", prompt = ">")
 
 set.seed(0) # to have reproducible random numbers
 
@@ -194,15 +194,36 @@ bold_table_rows = function(inputTable, rowIndices, digits = 5, format = "f") {
 
 \SweaveOpts{keep.source=TRUE}
 
+
+\usepackage[dvipsnames,x11names]{xcolor}
+
+\definecolor{darkred}{rgb}{0.545,0,0}
+
+\definecolor{midnightblue}{rgb}{0.098,0.098,0.439} 
+
+\definecolor{Rgray}{rgb}{0.95, 0.95, 0.95}
+
+\definecolor{Routcolor}{rgb}{0.35, 0.35, 0.35}
+
+\definecolor{Rkeywordcolor}{rgb}{0.6, 0, 0.6}
+
+\definecolor{RRecomdcolor}{rgb}{0.5, 0, 0.5}
+
+\definecolor{Rbcolor}{rgb}{0.5, 0, 0.5}
+
+
+% for vertical spacing http://tex.stackexchange.com/questions/50107/adjust-bottom-margin-of-a-listing-environment
+
 <<SweaveListingsPreparations, results=tex, echo=FALSE, strip.white=FALSE>>=
 require(SweaveListingUtils)
 # SweaveListingOptions has to be before SweaveListingPreparations
-SweaveListingOptions(Recomd.Keywordstyle = "{\\color{Rkeywordcolor}}",
+SweaveListingOptions(Keywordstyle = "{\\color{Rkeywordcolor}}",
+                     Recomd.Keywordstyle = "{\\color{Rkeywordcolor}}",
                      interm.Keywordstyle = "{\\color{Rkeywordcolor}}")
 SweaveListingPreparations(withVerbatim = FALSE,
                           withSchunkDef = TRUE,
                           LineLength = 60,
-                          Rcommentcolor = c(0, 0, 0),
+                          Rcommentcolor = c(0.6, 0.6, 0.6),
                           Rcolor = c(0.4, 0.4, 0.8),
                           Routcolor = c(0.5, 0, 0),
                           Rcode = c(getSweaveListingOption("Rcode"),
@@ -210,11 +231,15 @@ SweaveListingPreparations(withVerbatim = FALSE,
                           Rin = c(getSweaveListingOption("Rin"),
                                   basicstyle = "\\color{Rcolor}\\Rsize\\ttfamily",
                                   keywordstyle = "{\\color{Rkeywordcolor}}", 
-                                  backgroundcolor="\\color{Rgray}"),
+                                  backgroundcolor="\\color{Rgray}",
+                                  aboveskip = "0em",
+                                  belowskip = "0em"),
                           Rout = c(getSweaveListingOption("Rout"),
                                   basicstyle = "\\color{Routcolor}\\Rsize\\ttfamily",
                                   keywordstyle = "{}",
-                                  backgroundcolor="\\color{Rgray}"),
+                                  backgroundcolor="\\color{Rgray}",
+                                  aboveskip = "0em",
+                                  belowskip = "0em"),
                           Rset = c(getSweaveListingOption("Rset"),
                                    basicstyle = "{\\ttfamily}",
                                    commentstyle = "{\\color{Rcommentcolor}\\ttfamily}",
@@ -236,21 +261,6 @@ SweaveListingPreparations(withVerbatim = FALSE,
 
 \newcommand\Rsize{\footnotesize}
 
-\usepackage[dvipsnames,x11names]{xcolor}
-
-\definecolor{darkred}{rgb}{0.545,0,0}
-
-\definecolor{midnightblue}{rgb}{0.098,0.098,0.439} 
-
-\definecolor{Rgray}{rgb}{0.95, 0.95, 0.95}
-
-\definecolor{Routcolor}{rgb}{0.4, 0.4, 0.4}
-
-\definecolor{Rkeywordcolor}{rgb}{0.6, 0, 0.6}
-
-\definecolor{RRecomdcolor}{rgb}{0.5, 0, 0.5}
-
-\definecolor{Rbcolor}{rgb}{0.5, 0, 0.5}
 
 
 % http://tex.stackexchange.com/questions/39276/background-color-for-fancyvrb
@@ -278,3 +288,14 @@ SweaveListingPreparations(withVerbatim = FALSE,
 % from http://r.789695.n4.nabble.com/Colors-in-Sweave-td865316.html
 
 }
+
+
+
+% underlined title
+
+\newcommand\titleUl[1]{
+    \bigskip%
+    \noindent \underline{#1}%
+    \medskip%
+}
+

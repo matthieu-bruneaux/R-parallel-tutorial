@@ -16,7 +16,7 @@ git_hash = readLines(a)
 
 close(a)
 
-root_dir = "/home/matthieu/documents/turku_lab/experiments/projects_running_main/9spines_Estonia_sept_2011_respirometry/"
+root_dir = "/home/matthieu/documents/turku_lab/meetings_seminars_manuals/manuals/parallel_computing_with_R/"
 
 data_dir = paste(root_dir, "data/", sep = "")
 
@@ -26,7 +26,7 @@ dir.create(cache_dir)
 
 source_path = paste(root_dir, "source.R", sep = "")
 
-source(source_path)
+#source(source_path)
 
 options(continue = " ", prompt = ">")
 
@@ -178,7 +178,7 @@ bold_table_rows = function(inputTable, rowIndices, digits = 5, format = "f") {
 
 \usepackage[pdfborder={0 0 0}]{hyperref} % for hypertext links within the document
 
-\hypersetup{colorlinks, urlcolor=blue} % for url coloration
+\hypersetup{colorlinks, urlcolor=blue, linkcolor=blue} % for url coloration
 
 \usepackage{longtable} % for long tables over several pages
 

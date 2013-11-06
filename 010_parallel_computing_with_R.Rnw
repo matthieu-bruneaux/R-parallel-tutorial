@@ -13,28 +13,28 @@ If a desktop computer has a multi-core processor, it usually uses only one
 core at a time to run an R session. However, for certain analyses, it is 
 possible to take advantage of the presence of several cores and to run 
 independent parts of an analysis on different cores, simultaneously.
-One quick-and-dirty way of using several cores is to manually start as many
+One quick-and-dirty way for using several cores is to manually start as many
 R sessions as available cores; a much more simple, robust and elegant solution
 is to use one of the R packages for parallel computing. When scaling an 
-analysis on 16, 32 or more cores on a computer grid, manually starting and 
+analysis to 16, 32 or more cores on a computer grid, manually starting and 
 managing R scripts is not a good option.
 
 Not all analyses can be performed using parallel computing. Some analyses 
-reauire sequential steps, and each step depends on the result of the previous
+require sequential steps, and each step depends on the result of the previous
 one. In this case, it is not possible to distribute the calculation load on 
-independent processes. However, analyses with heavy calculation requirements 
-often consist of a few analysis steps which are repeated a large number of
-time, independently, on different input. Here are some examples:
+independent processes. However, many analyses with heavy calculation requirements 
+consist of a few analysis steps which are repeated a large number of
+time, independently, on different inputs. Here are some examples:
 
 \begin{itemize}
   \item G$_{st}$ values are available along the genome for your favourite species.
   You want to perform a kernel smoothing and some permutation testing to
-  detect significantly high Gst for each chromosome. The analyses for each
-  chromosome are independent and can be performed on separate cores.
+  detect regions with significantly high Gst on each chromosome. The analyses 
+  for each chromosome are independent and can be performed on separate cores.
   \item You want to test the robustness of your results by bootstrapping.
   You have to rerun your analysis a large number of time on resampled datasets
-  produced from the original observed dataset. Each analysis on a resampled
-  dataset is independent of the others, and all the bootstrap simulations can
+  produced by shuffling the original dataset. Each analysis on a resampled
+  dataset is independent from the others, and the bootstrap simulations can
   be distributed among several cores. 
 \end{itemize}
 
@@ -72,7 +72,7 @@ computer and its setup is quite simple.
 
 The approach explained in this document relies on the use on the \texttt{lapply}
 R function. This function is part of the \texttt{base} package but is seldom 
-used by R users at the beginning of their learning.
+used by R users when they just start to learn R.
 
 \texttt{lapply} applies a function to each element of a list or of a 
 vector (see \texttt{?lapply} for the complete documentation). An efficient use 

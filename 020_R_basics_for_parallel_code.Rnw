@@ -60,8 +60,8 @@ class(z)
 If we try to mix numbers and strings in a single vector, R automatically
 convert the numbers to strings.
 
-A list can also store a sequence of objects, but those objects can be of different
-types. A list can be created using the \texttt{list()} function.
+A list can store a sequence of objects as vectors do, but those objects can be 
+of different types. A list can be created using the \texttt{list()} function.
 
 <<>>=
 lst = list(1, 4, "sweave", "R")
@@ -84,7 +84,7 @@ class(lst[[3]])
 @
 
 An interesting feature of lists is that each element can be named and 
-retrieved by name. To retrieve an element by its name, we can use the
+retrieved by its name. To retrieve an element by its name, we can use the
 \texttt{[[]]} or \texttt{\$} notation.
 
 <<>>=
@@ -161,7 +161,7 @@ dividing the original dataset into separated list elements.
 example.
 
 <<>>=
-str(iris, 1)
+str(iris)
 @
 
 There are three different species in this dataset. We will separate the 
@@ -176,7 +176,9 @@ For each species, we now store the corresponding subset from the
 \texttt{iris} dataset into the list:
 
 <<>>=
-for (sp in levels(iris$Species)) {
+species = levels(iris$Species) # we retrieve the different species names
+species 
+for (sp in species) {
   sp.data[[sp]] = subset(iris, iris$Species == sp)
 }
 @
@@ -252,15 +254,16 @@ to compare different implementations of the same analysis to choose the
 fastest one. The \texttt{rbenchmark} package provides a function to easily 
 benchmark R code.
 
-Benchmarked code is usually a small piece of code which is very fast to run
-in itself but that is used a very large number of times in an analysis.
+Benchmarked code is usually a small piece of code which is fast to run
+in itself but that is used a large number of times in an analysis.
 If this piece of code can be improved to run faster, the whole analysis run
 time can be substantially improved. Since one unit run of the piece of code 
 of interest is usually very fast, it is hard to compare two different 
 implementations of it just with a single unit run. The \texttt{benchmark} 
 function enables to replicate unit runs of different implementations of the 
 code of interest and provides a convenient summary
-comparison of the execution times.
+comparison of the execution times. For very small pieces of code, the 
+\texttt{microbenchmark} package is also interesting.
 
 Here is a small example of the use of the \texttt{benchmark} function in
 which we compare two different implementation of a function to 
@@ -346,28 +349,3 @@ However, we should bear in mind that this is a very simple example and
 that the main gain in time resulting from \texttt{lapply} is the possibility
 to run the code on multiple cores at the same time.
 
-
-
-vectorization
-
-code refactorisation
-
-data export to each core
-
-not calculating faster, but more at the same time
-
-
-
-\subsection{Practical example: parallel computing with the \texttt{snow} 
-package}
-%-----------------------------------------------------------------------
-
-
-
-examples
-
-notes
-
-benchmark
-
-random number generator (rlecuyer)

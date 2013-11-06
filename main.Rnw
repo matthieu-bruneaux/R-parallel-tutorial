@@ -24,7 +24,7 @@
 \footnote{Git commit hash: \Sexpr{print(git_hash)}}
 }
 
-\author{Matti}
+\author{Matthieu Bruneaux}
 
 
 

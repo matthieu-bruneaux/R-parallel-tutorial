@@ -3,4 +3,21 @@
 
 
 
-To do
+Parallelization is a convenient way to get results faster when the analysis
+can be splitted into independent tasks. Substantial gains in speed can also 
+occur when draft code is optimised. Optimisation should not be the first
+step in scripting: getting a reliable, working code is. Once a script
+is working though, it might be interesting to check what can be done 
+to refactor it in a more efficient way. There are many ways to do 
+one thing in R, and some of them are much more time consuming than
+others. The speed difference between draft code and optimised code can
+be large, and sometimes optimisation can improve speed as much or more
+than parallelization. Of course, it is always interesting to get optimised
+code before running a parallel job in order to improve speed, but also to
+reduce the resource consumption. Code optimisation is also important for
+sequential analyses than cannot be parallelized.
+
+
+example with matrix product for proteins?
+
+vectorization

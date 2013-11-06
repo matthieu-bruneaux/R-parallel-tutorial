@@ -43,8 +43,8 @@ be used:
 
 
 
-\subsection{First example: bootstrapping regression models}
-%----------------------------------------------------------
+\subsection{Basic cluster setup: bootstrapping regression models}
+%----------------------------------------------------------------
 
 
 
@@ -123,8 +123,8 @@ for (i in 1:n.bootstrap) {
 
 
 
-\subsubsection{Function for analysis of the resamples}
-%-----------------------------------------------------
+\subsubsection{Defining the function for analysis}
+%-------------------------------------------------
 
 
 

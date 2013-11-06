@@ -3,4 +3,479 @@
 
 
 
-To do
+Parallel computing produces results in a shorter time not by calculating 
+faster, but by running several independent calculations at the same time. 
+If we make an analogy between a car factory and an R script, parallelization 
+speeds up the car production not by making the assembly line work faster, but 
+by providing several assembly lines working at the same speed in parallel.
+
+For an R script to be run in parallel, several steps are needed:
+\begin{itemize}
+  \item The data must be stored as elements of a list.
+  \item The analysis must be contained into a function that can be applied
+        on each element of this list.
+\end{itemize}
+
+We have seen a simple example covering those two points in the previous 
+section. The next steps are:
+\begin{itemize}
+  \item The R script must be able to control several cores.
+  \item Each core must be given the information needed (i.e. variables and 
+        functions).
+  \item A parallel version of \texttt{lapply} must distribute the calls of 
+        the analysis function to each element of the data list on the
+        different cores.
+  \item Depending on the output of the analysis function, a last step might
+        involve collecting the results from parallel processes into a single 
+        object.
+\end{itemize}
+
+For a bootstrap analysis to be run in parallel, two different approaches can
+be used:
+\begin{itemize}
+  \item Generate bootstrap resamples, store them in a list and apply the
+        analysis function on each element of the list to obtain a parameter
+        distribution for the bootstrap resamples.
+  \item Store indices in a list (e.g. from 1 to 10000), and apply the analysis
+        function to them. In this case the bootstrap resample generation is done
+        within the analysis function, and the memory needs are reduced.
+\end{itemize}
+
+
+
+\subsection{First example: bootstrapping regression models}
+%----------------------------------------------------------
+
+
+
+We will illustrate the basic setup for parallel computing on a local computer
+by bootstrapping regression models using the \texttt{cars} dataset. 
+
+The \texttt{cars} dataset
+contains the speed and stopping distance for several cars and was recorded in 
+the 1920s (see \texttt{?cars}). The kinetic energy of a car is 
+$\frac{1}{2}mv^2$. We can expect the stopping distance to be proportional to the 
+amount of kinetic energy that has to be dissipated by the brakes, which means
+that there should be a linear relationship between the square of the speed
+$v^2$ and the stopping distance $d$ (if we assumes the cars had the same 
+weight).
+
+<<>>=
+str(cars)
+# calculate v^2
+cars$speed.squared = cars$speed ^ 2
+# fit a linear regression on the observed data
+model.observed = lm(cars$dist ~ cars$speed.squared)
+@
+
+<<label=plot-cars, fig=TRUE, include=FALSE, echo=FALSE>>=
+plot(cars$speed.squared, cars$dist, bty = "n", las = 1, pch = 21, bg = "grey",
+     xlab = "speed.squared", ylab = "dist")
+abline(model.observed, col = "red", lwd = 2)
+@
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\RplotWidth]{sweave-plot-cars}
+  \end{center}
+  \caption[Relation between car speed and stopping distance]
+  {Relation between car speed (speed.squared) and stopping distance (dist), 
+  taken from the
+  \texttt{cars} dataset. The red line is the linear model fit.}
+  \label{fig.car.speed.distance.observed}
+\end{figure}
+
+We want to estimate the 95\% confidence interval for the slope of the linear
+regression model. To do this, we perform a bootstrap:
+\begin{itemize}
+  \item We generate $n$ bootstrap resamples with replacement from the observed
+  dataset.
+  \item For each bootstrap resample, we calculate the slope of the linear
+  regression model.
+  \item Based on the distribution of those $n$ slopes, we determine the 95\% 
+  confidence interval of the real slope.
+\end{itemize}
+
+
+
+\subsubsection{Preparing bootstrap resamples}
+%--------------------------------------------
+
+
+<<echo=FALSE>>=
+n.bootstrap = 100
+@
+
+\Sexpr{n.bootstrap} bootstrap resamples are generated and stored into a list.
+
+<<>>=
+n.bootstrap = 100
+# empty list
+resamples = list()
+# generate the resamples
+for (i in 1:n.bootstrap) {
+  # first draw randomly the row indices for the resample
+  resampled.rows = sample(1:nrow(cars), replace = T)
+  # then store the resample data into the list
+  resamples[[i]] = cars[resampled.rows, ]
+}
+@
+
+
+
+\subsubsection{Function for analysis of the resamples}
+%-----------------------------------------------------
+
+
+
+The function used for the analysis of each resample is very simple: it fits a 
+linear model to the resample and returns the linear model.
+
+<<>>=
+linear.fit = function(car.data) {
+  # calculate speed.squared
+  car.data$speed.squared = car.data$speed ^ 2
+  # linear model
+  model.resample = lm(car.data$dist ~ car.data$speed.squared)
+  # return the model
+  model.resample
+}
+@
+
+
+
+\subsubsection{Setting up the cluster and running the bootstrap}
+%---------------------------------------------------------------
+
+
+
+To use multiple cores, we set up a cluster using the \texttt{snow} package.
+
+<<>>=
+library(snow)
+# define the number of cores
+n.cores = 1
+# create the cluster with as many cores as needed
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+@
+
+The cluster is now ready. We can run the analysis in parallel using the
+\texttt{parLapply} function.
+The usage is the same as for \texttt{lapply}, except that we have to specify
+the cluster as the first argument. The output is also a list.
+
+<<>>=
+# run the bootstrap on the cluster
+bootstrap.models = parLapply(cluster, resamples, linear.fit)
+@
+
+When the run is done, we have to stop the cluster properly:
+
+<<>>=
+stopCluster(cluster)
+@
+
+
+
+\subsubsection{Examining the results}
+%------------------------------------
+
+
+
+Let's extract the slopes from the models:
+
+<<>>=
+# extract the slopes from the bootstrapped models with lapply
+# (we define a function on the fly to extract the slopes, which
+#  are stored in model$coefficients[2])
+bootstrap.slopes = lapply(bootstrap.models,
+                          function(x) x$coefficients[2])
+@
+
+The output of lapply is a list, we can convert it to a vector
+using 'unlist' and dropping the names of the elements.
+
+<<>>=
+class(bootstrap.slopes)
+bootstrap.slopes = unlist(bootstrap.slopes, use.names = F)
+head(bootstrap.slopes)
+@
+
+Let's plot the slope distribution (figure 
+\ref{fig.car.distrib.bootstrap.slopes}).
+
+<<label=bootstrap-cars-slopes, fig=TRUE, include=FALSE>>=
+# plot the distribution
+plot(density(bootstrap.slopes), bty = "n", main = "Bootstrap slopes")
+rug(bootstrap.slopes)
+@
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\RplotWidth]{sweave-bootstrap-cars-slopes}
+  \end{center}
+  \caption{Distribution of the bootstrapped slopes for the \texttt{cars}
+  dataset}
+  \label{fig.car.distrib.bootstrap.slopes}
+\end{figure}
+
+To determine the 95\% confidence interval for the slopes, we can use
+simple quantiles at 2.5\% and 97.5\%:
+
+<<>>=
+quantile(bootstrap.slopes, probs = c(0.025, 0.975))
+@
+
+<<label=plot-cars-bootstrap-lines, fig=TRUE, include=FALSE, echo=FALSE>>=
+plot(cars$speed.squared, cars$dist, bty = "n", las = 1, pch = 21, bg = "grey",
+     xlab = "speed.squared", ylab = "dist", type = "n")
+a = lapply(bootstrap.models, function(x) abline(x$coefficients, 
+                                col = adjustcolor("dodgerblue", 
+                                                  1/(max(n.bootstrap/5, 10)))))
+points(cars$speed.squared, cars$dist, las = 1, pch = 21, 
+       bg = "grey")
+abline(model.observed, col = "red", lwd = 2)
+@
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\RplotWidth]{sweave-plot-cars-bootstrap-lines}
+  \end{center}
+  \caption{Bootstrapped regression models for the \texttt{cars}
+  dataset}
+  \label{fig.car.bootstrap.regression}
+\end{figure}
+
+The overlay of the bootstrap regression model with the observed regression
+is shown in figure \ref{fig.car.bootstrap.regression}.
+
+
+
+\section{To be completed}
+%------------------------
+
+
+
+data export to each core
+
+notes
+
+benchmark
+
+random number generator (rlecuyer)
+
+
+
+<<label=attic.1, echo=FALSE>>=
+# the following code is not run; bits and pieces, notes and ideas.
+if (F) {
+s = subset(iris, iris$Species == "setosa")
+p = NULL
+for (i in 1:1000) {
+s2 = s[sample(1:nrow(s), replace=T), ]
+p = c(p, cor.test(s2$Sepal.Length, s2$Petal.Length, method = "sp")$p.value)
+}
+
+p = NULL
+for (i in 1:1000) {
+s2 = s[sample(1:nrow(s), replace=T), ]
+p = c(p, cor.test(s2$Petal.Width, s2$Petal.Length, method = "sp")$p.value)
+}
+
+p = NULL
+for (i in 1:1000) {
+s2 = s[sample(1:nrow(s), replace=T), ]
+p = c(p, cor.test(s2$Sepal.Width, s2$Sepal.Length, method = "sp")$p.value)
+}
+
+
+
+
+
+
+# http://stackoverflow.com/questions/18515903/do-a-nonlinear-least-square-nls-fit-for-a-sinusoidal-model
+# http://stats.stackexchange.com/questions/60994/fit-a-sine-to-data/60997#60997
+# for analysis of several cases
+n = 16
+slopes = rnorm(n)
+intercepts = rnorm(n)
+amplitudes = rnorm(n)
+freqs = abs(rnorm(n, mean = 6, sd = 3))
+n.x = 1000
+x = seq(0, 2 * pi, length.out = n.x)
+y = list()
+for (i in 1:n) {
+    y[[i]] = (slopes[i] * x + intercepts[i] + rnorm(length(x)) + 
+                amplitudes[i] * sin(freqs[i] * x))
+}
+
+
+# simple smoothing
+library(KernSmooth)
+i = 2
+a = ksmooth(x, y[[i]], bandwidth = 0.25)
+plot(x, y[[i]], col = "gray")
+lines(a, col = "darkgreen")
+
+
+# fit with nls and random starting values (bad)
+fit = nls(y[[i]] ~ slope * x + intercept + amplitude * sin(freq * x),
+          start = list(slope = 0.1, intercept = 0.1, amplitude = 0.1, freq = 6))
+parameters = summary(fit)$parameters
+slope = parameters[1]
+intercept = parameters[2]
+amplitude = parameters[3]
+freq = parameters[4]
+fit.y = slope * x + intercept + amplitude * sin(freq * x)
+lines(x, fit.y, col = "blue")
+
+# using a fft first (http://stackoverflow.com/questions/18515903/do-a-nonlinear-least-square-nls-fit-for-a-sinusoidal-model)
+raw.fft = fft(y[[i]])
+truncated.fft = raw.fft[seq(1, length(y[[i]])/2 - 1)]
+truncated.fft[1] = 0
+freq.start = which.max(abs(truncated.fft)) * 2 * pi / diff(range(x))
+
+fit = nls(y[[i]] ~ slope * x + intercept + amplitude * sin(freq * x),
+          start = list(slope = 0.1, intercept = 0.1, amplitude = 0.1, freq = freq.start))
+parameters = summary(fit)$parameters
+slope = parameters[1]
+intercept = parameters[2]
+amplitude = parameters[3]
+freq = parameters[4]
+fit.y = slope * x + intercept + amplitude * sin(freq * x)
+lines(x, fit.y, col = "red")
+
+
+
+
+
+
+# estimation pi monte carlo
+
+throw.rice.circle = function(n) {
+  
+  # Throw rice grains on a 2 x 2 square with a circle of radius 1
+  # Count the number of rice grains inside the circle
+  
+  # grain coordinates
+  
+  x = runif(n, min = -1, max = 1)
+  
+  y = runif(n, min = -1, max = 1)
+  
+  # distance from origin
+  
+  z = sqrt(x^2 + y^2)
+  
+  # count the number of grains inside the circle
+  
+  sum(z <= 1)
+  
+}
+
+
+
+several.rice.throws = function(n.grains, n.throws) {
+  
+  # Perform several rice throws
+  #
+  # TAKES
+  # n.grains: number of grains thrown per throw
+  # n.throws: number of throws
+  #
+  # RETURNS
+  # a vector with n grains in the circle and total n grains.
+  
+  grain.total = 0
+  
+  grain.in = 0
+  
+  for (i in 1:n.throws) {
+    
+    grain.total = grain.total + n.grains
+    
+    grain.in = grain.in + throw.rice.circle(n.grains)
+    
+  }
+  
+  out = c(grain.in, grain.total)
+  
+  out
+  
+}
+
+
+
+# estimates = vector()
+# 
+# n = vector()
+# 
+# for (i in 1:7) {
+#   
+#   n = c(n, 10^i)
+#   
+#   r = several.rice.throws(1000, 10^i)
+#   
+#   estimates = c(estimates, 4 * r[1] / r[2])
+#   
+#   print(i)
+#   
+# }
+# 
+# plot(log10(n), log10(abs(pi - estimates)))
+
+
+
+
+
+
+
+str(cars)
+#cars = rbind(cars, c(24, 350)) # to add an influential point
+speed = cars$speed
+energy = 1/2 * speed ^ 2
+distance = cars$dist
+plot(energy, distance)
+model = lm(distance ~ energy)
+abline(model)
+
+models.energy = list()
+
+models.speed = list()
+  
+n.bootstraps = 100
+
+for (i in 1:n.bootstraps) {
+  
+  cars.bootstrap = cars[sample(1:nrow(cars), nrow(cars), replace = T), ]
+  
+  speed = cars.bootstrap$speed
+  
+  energy = 1/2 * speed ^ 2
+  
+  distance = cars.bootstrap$dist
+  
+  models.energy[[i]] = lm(distance ~ energy)
+  
+  models.speed[[i]] = lm(distance ~ speed)
+  
+}
+
+plot(cars$speed, cars$dist, pch = 16)
+a = lapply(models.speed, abline, col = rgb(0, 0, 0, 0.01))
+
+plot(1/2 * (cars$speed ^ 2), cars$dist, pch = 16)
+b = lapply(models.energy, abline, col = rgb(0, 0, 0, 0.01))
+
+models.speed.slopes = unlist(lapply(models.speed, function(x) x$coefficients[2]))
+plot(density(models.speed.slopes))
+
+models.energy.slopes = unlist(lapply(models.energy, function(x) x$coefficients[2]))
+plot(density(models.energy.slopes)) # bimodal if there is an influential point
+
+rug(models.energy.slopes)
+
+quantile(models.energy.slopes, probs = c(0.025, 0.975))
+
+}
+@

@@ -263,6 +263,143 @@ is shown in figure \ref{fig.car.bootstrap.regression}.
 
 
 
+\subsection{Benchmarking - speed gain with cluster over sequential}
+
+
+
+\subsection{Exporting variables to each cluster node}
+%----------------------------------------------------
+
+
+
+\subsubsection{Flipping coins}
+%-----------------------------
+
+
+
+In the previous example, each node of the cluster received one input dataset
+at a time and the function to be applied to it, and was returning the output
+value. This setup is very simple, and sometimes we need to pass more variables
+to each node.
+
+Let's consider the following example: we want to simulate the behaviour of 
+a coin which is tossed 100 times. We also want to be able to choose if the coin
+is fair or not. Here is how to simulate one experiment (100 coin flipping):
+
+<<>>=
+coin.sequence = sample(c("H", "T"), size = 100, replace = T)
+table(coin.sequence)
+@
+
+If this case, the coin is fair and the frequency of heads in the sample is
+\Sexpr{round(sum(coin.sequence == "H") / length(coin.sequence), 2)}.
+
+However, we can specify an expected frequency of heads different from 0.5:
+
+<<>>=
+h = 0.25 # head frequency
+coin.sequence = sample(c("H", "T"), size = 100, replace = T, 
+                       prob = c(h, 1 - h))
+table(coin.sequence)
+@
+
+This time the head frequency is 
+\Sexpr{round(sum(coin.sequence == "H") / length(coin.sequence), 2)}.
+
+
+
+\subsubsection{Flipping in parallel}
+%-----------------------------------
+
+
+
+Since we are now able to run independent analyses in parallel, we would like to
+simulate 100 experiments comprising 100 flips in order to examine how precise
+is the head frequency estimate. The preparation for the parallel run is very
+straightforward: there is actually no input dataset to store into a list, and
+only one function to define which will be run in parallel. The output of this
+function will be stored in a list by \texttt{parLapply}. However, to run the
+function several times in parallel with \texttt{parLapply}, we have to use
+a dummy list as the input.
+
+<<>>=
+# define a dummy list as an input to parLapply
+index = as.list(1:100)
+# define the simulation function
+toss.coin = function(i = 0) {
+  # This function takes one dummy argument in order to be callable by parLapply, 
+  # but does not use it.
+  sample(c("H", "T"), size = 100, replace = T)
+}
+@
+
+We can now initialize the cluster and do the run:
+
+<<>>=
+library(snow)
+# define the number of cores
+n.cores = 1
+# create the cluster with as many cores as needed
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# run the simulations
+simulations = parLapply(cluster, index, toss.coin)
+@
+
+To examine the results, we simply calculate the frequency of heads in each 
+simulations.
+
+<<>>=
+# apply a function to each simulation
+head.frequencies = lapply(simulations, function(x) sum(x == "H") / length(x))
+# convert the result to a vector
+head.frequencies = unlist(head.frequencies)
+# calculate the mean and standard deviation
+mean(head.frequencies)
+sd(head.frequencies)
+@
+
+In the end, the estimate is quite precise with such a large number of 
+simulations.
+
+
+
+\subsubsection{Flipping an unfair coin}
+%--------------------------------------
+
+
+
+We can modify slightly the previous function to simulate an unfair coin.
+
+<<>>=
+# frequency of heads
+h = 0.25
+# simulation function using h
+toss.coin = function(i = 0) {
+  # This function takes one dummy argument in order to be callable by parLapply, 
+  # but does not use it.
+  sample(c("H", "T"), size = 100, replace = T, prob = c(h, 1 - h))
+}
+# one simulation
+simulation = toss.coin()
+# observed head frequency
+sum(simulation == "H") / length(simulation)
+@
+
+It works fine. Let's use our parallel cluster again to simulate more 
+experiments.
+
+% error output with Sweave
+% http://tolstoy.newcastle.edu.au/R/help/05/09/11690.html
+
+<<echo=TRUE, eval=FALSE>>=
+simulations = parLapply(cluster, index, toss.coin)
+@
+<<echo=FALSE, eval=TRUE, results=VERBATIM>>=
+e = try({simulations = parLapply(cluster, index, toss.coin)})
+cat(e)
+@
+
+
 
 
 \section{To be completed}

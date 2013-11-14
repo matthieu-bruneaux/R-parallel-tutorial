@@ -57,8 +57,7 @@ the 1920s (see \texttt{?cars}). The kinetic energy of a car is
 $\frac{1}{2}mv^2$. We can expect the stopping distance to be proportional to the 
 amount of kinetic energy that has to be dissipated by the brakes, which means
 that there should be a linear relationship between the square of the speed
-$v^2$ and the stopping distance $d$ (if we assumes the cars had the same 
-weight).
+$v^2$ and the stopping distance $d$ (if we assumes the cars weighed the same).
 
 <<>>=
 str(cars)
@@ -88,18 +87,31 @@ abline(model.observed, col = "red", lwd = 2)
 We want to estimate the 95\% confidence interval for the slope of the linear
 regression model. To do this, we perform a bootstrap:
 \begin{itemize}
-  \item We generate $n$ bootstrap resamples with replacement from the observed
-  dataset.
+  \item We generate $n$ bootstrap resamples by sampling with replacement from 
+  the original dataset.
   \item For each bootstrap resample, we calculate the slope of the linear
   regression model.
   \item Based on the distribution of those $n$ slopes, we determine the 95\% 
   confidence interval of the real slope.
 \end{itemize}
 
+We need to apply the regression model on many bootstrap resamples. In this case,
+each linear regression on a bootstrap resample is independent from the other
+linear regressions. This independence means that the analyses can be run in 
+parallel. The steps we are going to follow are:
+\begin{itemize}
+  \item Store the input data (the bootstrap resamples) into a list.
+  \item Create a function which will perform the analysis (linear regression) on 
+  each input dataset.
+  \item Apply the analysis function to each input dataset in parallel using 
+  \texttt{parLappply}. 
+\end{itemize}
+
 
 
 \subsubsection{Preparing bootstrap resamples}
 %--------------------------------------------
+
 
 
 <<echo=FALSE>>=
@@ -187,13 +199,13 @@ Let's extract the slopes from the models:
 <<>>=
 # extract the slopes from the bootstrapped models with lapply
 # (we define a function on the fly to extract the slopes, which
-#  are stored in model$coefficients[2])
+#  are stored in model$coefficients[2] for each model)
 bootstrap.slopes = lapply(bootstrap.models,
                           function(x) x$coefficients[2])
 @
 
-The output of lapply is a list, we can convert it to a vector
-using 'unlist' and dropping the names of the elements.
+The output of lapply is a list. We can convert it to a vector
+using \texttt{unlist} and dropping the names of the elements.
 
 <<>>=
 class(bootstrap.slopes)
@@ -248,6 +260,8 @@ abline(model.observed, col = "red", lwd = 2)
 
 The overlay of the bootstrap regression model with the observed regression
 is shown in figure \ref{fig.car.bootstrap.regression}.
+
+
 
 
 

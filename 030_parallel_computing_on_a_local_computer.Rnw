@@ -327,8 +327,8 @@ a dummy list as the input.
 index = as.list(1:100)
 # define the simulation function
 toss.coin = function(i = 0) {
-  # This function takes one dummy argument in order to be callable by parLapply, 
-  # but does not use it.
+  # This function takes one dummy argument in order to be callable by 
+  # parLapply, but does not use it.
   sample(c("H", "T"), size = 100, replace = T)
 }
 @
@@ -350,7 +350,8 @@ simulations.
 
 <<>>=
 # apply a function to each simulation
-head.frequencies = lapply(simulations, function(x) sum(x == "H") / length(x))
+head.frequencies = lapply(simulations, 
+                          function(x) sum(x == "H") / length(x))
 # convert the result to a vector
 head.frequencies = unlist(head.frequencies)
 # calculate the mean and standard deviation
@@ -375,8 +376,8 @@ We can modify slightly the previous function to simulate an unfair coin.
 h = 0.25
 # simulation function using h
 toss.coin = function(i = 0) {
-  # This function takes one dummy argument in order to be callable by parLapply, 
-  # but does not use it.
+  # This function takes one dummy argument in order to be callable by 
+  # parLapply, but does not use it.
   sample(c("H", "T"), size = 100, replace = T, prob = c(h, 1 - h))
 }
 # one simulation
@@ -399,6 +400,25 @@ e = try({simulations = parLapply(cluster, index, toss.coin)})
 cat(e)
 @
 
+This doesn't work so fine. Object \texttt{h} is not found. But if we try to 
+call it:
+
+<<>>=
+h
+@
+
+Now it works. The reason is that we defined \texttt{h} in our current workspace,
+but when the cluster is initialized, each node has its own workspace. Only the
+list elements it is working on and the function used by \texttt{parLapply} are
+sent to each node, and it does not see the global environment of the calling
+workspace.
+
+If we want the nodes to know about a variable, we have to explicitly send it
+to them.
+
+<<>>=
+#clusterExport()
+@
 
 
 

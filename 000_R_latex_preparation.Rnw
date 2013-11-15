@@ -280,7 +280,7 @@ SweaveListingPreparations(withVerbatim = FALSE,
 
 \fvset{listparameters={\setlength{\topsep}{0pt}}} % from Sweave-customization-1.pdf
 
-\renewenvironment{Schunk}{\vspace{\topsep}\setlength{\leftmargin}{2em}}{\vspace{\topsep}}
+\renewenvironment{Schunk}{\addvspace{\topsep}\setlength{\leftmargin}{2em}}{\addvspace{\topsep}}
 
 % see http://stackoverflow.com/questions/4808052/sweave-syntax-highlighting-in-output
 % for more formatting

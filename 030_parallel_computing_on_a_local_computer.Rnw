@@ -560,14 +560,177 @@ loaded with the package.
 
 
 
-\section{Parallel computing and randum number generation}
-%--------------------------------------------------------
+\subsection{Parallel computing and random number generation}
+%-----------------------------------------------------------
 
 
 
-random number generator (rlecuyer)
+When performing analyses which rely on random number generation, such as 
+bootstrapping, it is important to ensure that each core will produce an
+independent stream of random number, otherwise the parallel runs which just
+be exact replicates of each other.
+
+The \texttt{snow} library provides functions to initialize independent random
+number generator (RNG) on each core.
+
+Let's experiment a bit and see if we can constrain our function in order to have
+exactly identical RNG on each node.
+
+<<>>=
+# load the library
+library(snow)
+# set up the cluster
+n.cores = 3 # max 16
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+  set.seed(4) # this initializes the RNG inside the function
+  runif(1)
+}
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
+
+In this case, we force the RNG initialization to the same value, each time, 
+from within the function. Thus, the random numbers are the same between function 
+calls on a single core and also between cores.
+
+What happens if we remove the \texttt{set.seed} call? Intuitively, each function
+call on a single core should generate a new random number, but the random number
+streams might be the same on the different cores.
+
+<<>>=
+set.seed(4) # we initialize the seed before the cluster
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+#  set.seed(4) # no seed manipulation here
+  runif(1)
+}
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
+
+This gives different numbers among the cores. It looks like we don't actually 
+need to initialize different seeds on the cores to have different streams.
+
+If we run again the same code:
+
+<<>>=
+set.seed(4) # we initialize the seed before the cluster
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+#  set.seed(4) # no seed manipulation here
+  runif(1)
+}
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
+
+The numbers are different again, despite the fact that we set up the seed before
+the cluster initialization. It looks like the seed state outside the
+cluster has no effect on the RNG on each core.
+
+I didn't dig into it further, but more information about reproducible RNG for 
+parallel computing could be found with the \texttt{snowFT} package; see also 
+this \href{https://stat.ethz.ch/pipermail/r-sig-hpc/2011-January/000895.html}
+{post}.
+
+But in any case, to ensure the independence of the RNG streams among the cores,
+it is good practice to use \texttt{clusterSetupRNG}:
+
+<<>>=
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+  runif(1)
+}
+# initialize independent RNG
+clusterSetupRNG(cluster)
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
+
+By default, \texttt{clusterSetupRNG} uses the L'Ecuyer's random number
+generator (requires the \texttt{rlecuyer} package), but another generator is
+also available.
+
+Interestingly, using \texttt{clusterSetupRNG} results in independent RNG even
+when \texttt{set.seed} is used within the function:
+
+<<>>=
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+  set.seed(4)
+  runif(1)
+}
+# initialize independent RNG
+clusterSetupRNG(cluster)
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
+
+We can also notice that the generated numbers are the same as before. This is
+because \texttt{clusterSetupRNG} used the same default seed, but we can change
+this:
+
+<<>>=
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+  runif(1)
+}
+# initialize independent RNG
+clusterSetupRNG(cluster, seed = 1)
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
+
+We can also make it different between successive runs by using the time as the
+seed:
+
+<<>>=
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# define a function using random number
+f = function(x) {
+  runif(1)
+}
+# initialize independent RNG
+clusterSetupRNG(cluster, seed = Sys.time())
+# run the function in parallel
+x = as.list(1:9)
+a = parLapply(cluster, x, f)
+stopCluster(cluster)
+unlist(a)
+@
 
 
+
+
+
+
+% Attic
+%------
 
 <<label=attic.1, echo=FALSE>>=
 # the following code is not run; bits and pieces, notes and ideas.

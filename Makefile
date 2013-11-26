@@ -3,7 +3,7 @@
 
 
 all : *.Rnw 000_vc.tex
-	Rnw2pdf.sh main.Rnw
+	./Rnw2pdf.sh main.Rnw
 
 clean :
 	rm -f main.tex

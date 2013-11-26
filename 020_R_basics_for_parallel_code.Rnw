@@ -248,6 +248,9 @@ code.
 %-----------------------------
 
 
+\label{section_rbenchmark}
+
+
 
 Benchmarking is useful to determine how fast some pieces of code are run, and
 to compare different implementations of the same analysis to choose the 

@@ -17,6 +17,13 @@ code before running a parallel job in order to improve speed, but also to
 reduce the resource consumption. Code optimisation is also important for
 sequential analyses than cannot be parallelized.
 
+Hadley Wickham is currently writing a very nice reference called 
+\emph{Advanced R Programming}, which should be completed (and remain freely 
+available) in early 2014. It is available 
+\href{http://adv-r.had.co.nz/#advanced-r-programming}
+{here} and features a section about Performant code (see 
+\href{http://adv-r.had.co.nz/Performance.html}{this section} and the related 
+ones).
 
 example with matrix product for proteins?
 

@@ -20,10 +20,6 @@ root_dir = "/home/matthieu/documents/turku_lab/meetings_seminars_manuals/manuals
 
 data_dir = paste(root_dir, "data/", sep = "")
 
-cache_dir = paste(root_dir, "cache_R/", sep = "")
-
-dir.create(cache_dir)
-
 source_path = paste(root_dir, "source.R", sep = "")
 
 #source(source_path)

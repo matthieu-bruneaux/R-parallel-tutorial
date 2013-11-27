@@ -1,5 +1,5 @@
-Using R in parallel - Tutorial
-==============================
+Using R in parallel with the snow package - Tutorial
+====================================================
 
 
 
@@ -9,3 +9,5 @@ on server nodes.
 Based on the snow package in R.
 
 Written with Sweave.
+
+The pdf manual can be built from source by running 'make'.

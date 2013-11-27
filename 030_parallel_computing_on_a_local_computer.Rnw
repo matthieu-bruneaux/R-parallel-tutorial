@@ -3,6 +3,10 @@
 
 
 
+\label{section.parallel.local.computer}
+
+
+
 Parallel computing produces results in a shorter time not by calculating 
 faster, but by running several independent calculations at the same time. 
 If we make an analogy between a car factory and an R script, parallelization 

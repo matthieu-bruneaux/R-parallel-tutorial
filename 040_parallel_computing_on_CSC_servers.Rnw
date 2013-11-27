@@ -3,4 +3,308 @@
 
 
 
-To do
+Parallel computing on a CSC server is very similar to what is done using a 
+local computer with several cores. In this section, we will demonstrate how
+to use up to 16 cores from one node on the \texttt{taito} server.
+
+First, we prepare and test the script on a local computer. Then, we copy it
+to \texttt{taito} and set up the job to be run.
+
+
+
+\subsection{Preparing the script locally}
+%----------------------------------------
+
+
+
+A script which can run in parallel on a local computer will be able to run in 
+parallel on \texttt{taito} without any modification, except the number of cores
+used. See section \ref{section.parallel.local.computer} for how to write a 
+script that can be run in parallel locally.
+
+
+
+Let's use a simple script that flips coins again. Here is the function to 
+simulate a trial (1000000 flippings):
+
+<<>>=
+# define the simulation function (one trial flips the coin 
+# 1000000 times)
+toss.coin = function(i = 0) {
+  # This function takes one dummy argument in order to be callable by 
+  # parLapply, but does not use it.
+  # Simulate the trial
+  trial = sample(c("H", "T"), size = 1000000, replace = T)
+  # return the proportion of heads
+  sum(trial == "H") / length(trial)
+}
+@
+
+and here is the wrapping for the parallel execution:
+
+<<>>=
+# we will run 100 coin flipping trials
+index = as.list(1:100)
+# initialize the cluster
+library(snow)
+n.cores = 3 # this will be modified for taito
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# run the simulations
+simulations = parLapply(cluster, index, toss.coin)
+# stop the cluster
+stopCluster(cluster)
+@
+
+We can have a look at how long it takes to be run locally in serial or in 
+parallel processes, using \Sexpr{n.cores} cores:
+
+<<label=toto>>=
+library(rbenchmark)
+# serial function
+f.serial = function() {
+  lapply(index, toss.coin)
+}
+# parallel function
+f.parallel = function() {
+  parLapply(cluster, index, toss.coin)
+}
+# initialize the cluster
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+# benchmark
+bmk = benchmark(f.serial(), f.parallel(),
+                columns = c("test", "replications", 
+                            "elapsed", "relative"),
+                order = "relative",
+                replications = 2)
+bmk
+@
+
+The parallel run is faster than the serial run. The script works and is ready 
+to be copied to \texttt{taito}.
+
+The script \texttt{flipping.coins.R} is:
+
+<<echo=TRUE, eval=FALSE>>=
+# flipping.coins.R
+
+# flipping coins script for a parallel run on Taito
+
+# trial function
+toss.coin = function(i = 0) {
+  # This function takes one dummy argument in order to be callable by 
+  # parLapply, but does not use it.
+  # Simulate the trial
+  trial = sample(c("H", "T"), size = 1000000, replace = T)
+  # return the proportion of heads
+  sum(trial == "H") / length(trial)
+}
+
+# initialize the cluster
+library(snow)
+n.cores = 16 # we can use up to 16 cores on one node with taito
+cluster = makeSOCKcluster(rep("localhost", n.cores))
+
+# run
+index = as.list(1:100)
+# here we use system.time to time the execution of the simulations
+# we have to enclose the expression to time between { and }
+# print will force the output to stdout
+print(system.time({simulations = parLapply(cluster, index, toss.coin)}))
+
+# save the results
+write.table(unlist(simulations), "flipping.coins.results")
+
+# stop the cluster
+stopCluster(cluster)
+@
+
+
+
+\subsection{Setting up the script on Taito}
+%------------------------------------------
+
+
+
+We will run the script on the CSC server Taito. The server address is
+\texttt{taito.csc.fi}. You should have a username and a password to connect to 
+the server. Let's assume your login is \texttt{toto} and your password 
+\texttt{1234}.
+
+You can connect to a remote terminal on the server by using Putty on Windows or
+the simple command \verb+ssh toto@taito.csc.fi+ from a Linux terminal. From the
+remote terminal, you can start jobs and examine the results of the jobs. To
+move files to and from Taito, the easiest way is to use a SFTP client.
+
+
+
+\subsubsection{Copying a file to Taito}
+%--------------------------------------
+
+
+
+You can copy a file to Taito using a SFTP client (e.g., WinSCP, Filezilla). With 
+Filezilla, the host is \texttt{taito.csc.fi}, the protocol is \texttt{SFTP}, the 
+logon type is \texttt{normal} and you can also fill in your login and password.
+
+Once you are connected to Taito with the client, you can create a new folder
+(\texttt{parallel.test}) and copy the script \texttt{flipping.coins.R} into it.
+
+
+
+\subsubsection{Preparing the sbatch file}
+%----------------------------------------
+
+
+
+Each job request on Taito is processed by \texttt{sbatch}. To make a request,
+we can to wrap the call to the R script in a small script which can be used by
+\texttt{sbatch}. More information is available 
+\href{http://research.csc.fi/taito-batch-jobs}{on the CSC website}.
+
+Here is the sbatch file we are going to use (\texttt{R.snow.sh}):
+
+\begin{Schunk}
+\begin{Sinput}
+#!/bin/bash -l
+#SBATCH -J R_snow
+#SBATCH -o output_%J.txt
+#SBATCH -e errors_%J.txt
+#SBATCH -t 2:00:00
+#SBATCH -n 1
+#SBATCH --nodes=1 
+#SBATCH --cpus-per-task=16
+#SBATCH --mem-per-cpu=4000
+#SBATCH --mail-type=END
+#SBATCH --mail-user=toto@utu.fi
+
+module load R.latest/latest
+Rscript --vanilla flipping.coins.R
+\end{Sinput}
+\end{Schunk}
+
+\begin{itemize}
+\item The first line indicates that it is a bash script (\verb+#!/bin/bash+).
+\item All the lines starting with \verb+#SBATCH+ are comments which are used
+  by \texttt{sbatch} to process the job request.
+\item -J: name of the job
+\item -o: file where output is redirected (\%J is a placeholder for the job id)
+\item -e: file where errors are redirected
+\item -t: time request for the job. The job will be killed if it goes beyond 
+  that time limit.
+\item -n: number of task run by the job
+\item --nodes: number of node requested. I have only tried to use one node with
+  \texttt{snow}, I don't know if it can handle more than one node.
+\item --cpus-per-task: number of cores used by the script. One node on Taito has
+  16 cores, so \texttt{snow} can be run with 16 cores specified in the R script.
+\item --mem-per-cpu: each node in Taito has 64 Go of memory. If one uses all 16
+  cores of a node, then each core can use up to 4000 Mo of memory.
+\item --mail-type and --mail-user: useful to get information about when the job
+  starts or ends.
+\item The last two lines are the actual job and are executed by the shell.
+\end{itemize}
+
+In Taito, users have to load specific modules to have access to different 
+softwares. Details about this system can be found 
+\href{http://research.csc.fi/taito-module-system}{here}. Basically, to be able
+to run R, one should load the R module with:
+\begin{verbatim}module load R.latest/latest\end{verbatim}
+
+The R script is executed using:
+\begin{verbatim}Rscript --vanilla flipping.coins.R\end{verbatim}
+
+
+
+\subsection{Running a job}
+%-------------------------
+
+
+
+We now have two files ready in the folder \texttt{parallel.test} on Taito: 
+\texttt{flipping.coins.R}, which is the 
+R script itself and does the actual analysis, and \texttt{R.snow.sh}, which is
+a bash script with special comment lines which is used to submit the job to
+the queue.
+
+We can send submit the job to the queue with:
+\begin{verbatim}sbatch R.snow.sh\end{verbatim}
+
+The job is sent to the queue and will be run when a node is assigned to it.
+We can follow the status of the job with (replacing \texttt{toto} by the real
+user name):
+\begin{verbatim}squeue -l -u toto\end{verbatim}
+
+Each job has an id number. To cancel a job, type (replacing \texttt{552657} with
+the real job id number):
+\begin{verbatim}scancel 552657\end{verbatim}
+
+In our example script, the results are written to 
+\texttt{flipping.coins.results}. Any other output is sent to 
+\texttt{output\_xxx}
+(e.g., the execution time returned by \texttt{system.time}) and errors are sent
+to \texttt{errors\_xxx}, where \text{xxx} is the job id.
+
+
+
+\subsection{Comparison with a serial job}
+%----------------------------------------
+
+
+
+The script can be submitted in a serial form to compare execution times
+(saved in \texttt{flipping.coins.serial.R}):
+
+<<echo=TRUE, eval=FALSE>>=
+# flipping.coins.serial.R
+
+# flipping coins script for a serial run on Taito
+
+# trial function
+toss.coin = function(i = 0) {
+  # This function takes one dummy argument in order to be callable by 
+  # lapply, but does not use it.
+  # Simulate the trial
+  trial = sample(c("H", "T"), size = 1000000, replace = T)
+  # return the proportion of heads
+  sum(trial == "H") / length(trial)
+}
+
+# run
+index = as.list(1:100)
+# here we use system.time to time the execution of the simulations
+# we have to enclose the expression to time between { and }
+# print will force the output to stdout
+print(system.time({simulations = lapply(index, toss.coin)}))
+
+# save the results
+write.table(unlist(simulations), "flipping.coins.results.serial")
+@
+
+The sbatch file is (\texttt{R.serial.sh}):
+
+\begin{Schunk}
+\begin{Sinput}
+#!/bin/bash -l
+#SBATCH -J R_serial
+#SBATCH -o output_%J.txt
+#SBATCH -e errors_%J.txt
+#SBATCH -t 2:00:00
+#SBATCH -n 1
+#SBATCH --nodes=1 
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=4000
+#SBATCH --mail-type=END
+#SBATCH --mail-user=toto@utu.fi
+
+module load R.latest/latest
+Rscript --vanilla flipping.coins.serial.R
+\end{Sinput}
+\end{Schunk}
+
+During my tests, the execution time was 0.656s with a parallel process and 
+6.242s with a serial job. The improvement is about 10 fold, which is less than
+expected based on the number of cores used (16), but again in this case the
+analysis is a short one and the overhead of the distribution of the analyses on
+the cores might not be negligible compared to the analysis time itself. However,
+analyses that need to be run in parallel are typically long ones for which this
+overhead is likely to be very small compared to the analysis run time.
+

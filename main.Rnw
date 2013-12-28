@@ -75,7 +75,7 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-%\SweaveInput{020_R_basics_for_parallel_code.Rnw}
+\SweaveInput{020_R_basics_for_parallel_code.Rnw}
 
 \clearpage
 
@@ -97,7 +97,7 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-\SweaveInput{A_010_benchmarking.Rnw}
+%\SweaveInput{A_010_benchmarking.Rnw}
 
 
 

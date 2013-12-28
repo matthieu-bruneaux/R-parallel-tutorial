@@ -1,24 +1,26 @@
-\section{\R\ basics for parallel code}
+\chapter{\R\ basics for parallel code}
 %-------------------------------------
 
 
 
 This section describes the basics needed to run code on multiple cores using
-the \texttt{lapply} approach. It covers list creation and manipulation and
-\texttt{lapply} call.
+data stored as list and the \texttt{lapply} approach. It covers list
+creation and manipulation and \texttt{lapply} call.
+
+If you are already familiar with lists and \texttt{lapply}, you can skip it and
+go directly to the next section.
 
 
 
-\subsection{Basic list manipulation}
-%-----------------------------------
+\section{Basic list manipulation}
+%--------------------------------
 
 
 
-Lists can be seen as sophisticated R vectors. A vector in R can store a 
+Lists can be seen as sophisticated \R\ vectors. A vector in \R\ can store a 
 sequence of objects of the same type (e.g. all numbers or all strings), 
-but cannot store objects of different
-types. A list can store objects of different types. Below is a short 
-introduction about vectors and lists in R.
+but cannot store objects of different types. A list can store objects of 
+different types. Below is a short introduction about vectors and lists in \R.
 
 A vector can be created using
 the \texttt{c()} function to combine values.
@@ -57,7 +59,7 @@ z
 class(z)
 @
 
-If we try to mix numbers and strings in a single vector, R automatically
+If we try to mix numbers and strings in a single vector, \R\ automatically
 convert the numbers to strings.
 
 A list can store a sequence of objects as vectors do, but those objects can be 
@@ -148,46 +150,246 @@ for (object in lst) {
 
 
 
-\subsection{Building a simple list from an existing dataset}
-%-----------------------------------------------------------
+\section{Using \texttt{sapply} and \texttt{lapply}}
+%--------------------------------------------------
 
 
 
-Running parallel code often requires to store an existing dataset (stored
-in a file and loaded using \texttt{read.table} for example) into a list,
-dividing the original dataset into separated list elements.
-
-\texttt{iris} is a dataset shipped with R that we will use in this short
-example.
+In the introduction, we used \texttt{sapply} to calculate the square for numbers
+contained in a vector. The return value is also a vector:
 
 <<>>=
-str(iris)
+# define the vector
+v = 1:10
+v
+# function to return the square
+f = function(x) { x^2 }
+# apply f to each element of v with sapply
+r = sapply(v, f)
+r
+# each element of r corresponds to an element of v
+# for example
+v[2]
+r[2] # r[2] is f(v[2])
+v[5]
+r[5] # r[5] is f(v[5])
 @
 
-There are three different species in this dataset. We will separate the 
-data specific to each species into three elements stored into one list.
-First, let's create an empty list to store the data for each species.
+To apply a function to each element of a list, we use \texttt{lapply}. The 
+return value is a list:
+
+<<>>=
+# define a list
+lst = list()
+lst[["length_male_dragon"]] = c(7, 8, 6, 8, 7, 6)
+lst[["length_female_dragon"]] = c(5, 6, 7, 5, 6, 8)
+str(lst)
+# define a function to calculate the mean length
+f = function(x) { sum(x) / length(x) }
+# apply f to each element of lst
+r = lapply(lst, f)
+class(r) # r is a list also
+str(r) # each element of r matches an element of lst
+lst[[1]]
+r[[1]] # r[[1]] is f(lst[[1]])
+lst[[2]]
+r[[2]] # r[[2]] is f(lst[[2]])
+@
+
+In the next section, we will see how to store more meaningful examples of how to
+store data into a list from an existing dataset and of using \texttt{lapply}.
+
+
+
+\section{Building a list from an existing dataset: splitting a data frame}
+%-------------------------------------------------------------------------
+
+
+
+\subsection{Basic data frame manipulation}
+%-----------------------------------------
+
+
+
+Running parallel code often requires to store an existing dataset (saved
+in a text file from Excel and loaded into \R\ using \texttt{read.table} for 
+example, or stored into separate files on the disk) into a list, dividing the 
+original dataset into separated list elements.
+
+\texttt{iris} is a dataset shipped with R that we will use in this short
+example. It is a \emph{data frame}, which is equivalent to a table containing 
+data arranged in columns. Each row represents a record and each column 
+represents a variable.
+
+<<>>=
+class(iris) # data frame
+dim(iris) # number of rows (records) and of columns (variables)
+@
+
+The names of the columns can be retrieved easily:
+
+<<>>=
+names(iris)
+@
+
+We can have a look at the data structure:
+
+<<>>=
+head(iris) # show the first rows to have an idea of the table content
+str(iris) # show the type of each column
+@
+
+The data frame \texttt{iris} contains 150 records for which 5 variables are
+available. The variables are \texttt{Sepal.Length}, \texttt{Sepal.Width}, 
+\texttt{Petal.Length}, \texttt{Petal.Width} and \texttt{Species}.
+
+
+Data frames and lists are actually very similar in the way the data can be 
+accessed. Data frame columns are equivalent to list elements, and can be
+accessed using the same notations: \texttt{[[]]} and \texttt{\$}.
+
+<<>>=
+# we use head to show only the beginning of each object
+head(iris[[1]]) # Sepal.Length column
+head(iris[["Sepal.Width"]])
+head(iris$Petal.Length)
+@
+
+Another very convenient way to access the data in a dta frame is to use the
+\texttt{[row, column]} notation:
+
+<<>>=
+# element from the first row, first column
+iris[1, 1]
+# element from the first row, 4th column
+iris[1, 4]
+# element from the second row, third column
+iris[2, 3]
+@
+
+Integer ranges are allowed in the \texttt{[,]} notation:
+
+<<>>=
+# elements from rows 1 to 3, first column
+iris[1:3, 1]
+# elements from rows 2 to 4, columns 2 and 3
+iris[2:4, 2:3]
+@
+
+Any vector of integers is actually allowed:
+
+<<>>=
+# elements from rows 1, 4, 5, and third column
+iris[c(1, 4, 5), 3]
+# elements from rows 4, 1 and columns 1 and 2
+iris[c(4, 1), c(1, 2)]
+@
+
+Whole rows or whole columns can be selected if one side of the comma is left
+blank:
+
+<<>>=
+# select ALL the rows in the 4th column
+a = iris[, 4]
+length(a)
+head(a)
+# select ALL the rows in the 3th and 5th columns
+b = iris[, c(3,5)]
+dim(b)
+head(b)
+# select ALL the columns for records 1 to 5
+c = iris[5:10, ]
+c
+@
+
+Finally, one of the most useful notation is to use conditions to select a set
+of rows or columns. First we can store in a vector (\texttt{long.sepal}) whether
+or not the sepal length of the records are less than 5:
+
+<<>>=
+short.sepal = (iris$Sepal.Length < 5)
+length(short.sepal)
+head(iris$Sepal.Length)
+head(short.sepal)
+@
+
+The resulting vector contains \texttt{TRUE} and \texttt{FALSE} values indicating
+whether or not the condition \texttt{(iris\$Sepal.Length < 5)} was true. This
+vector can be used to specify which rows of the \texttt{iris} data frame we
+want to select. We do this by using the TRUE/FALSE vector to specify the rows
+in the \texttt{[,]} notation, and by leaving the column indication blank to 
+retrieve all the columns for those rows:
+
+<<>>=
+short.sepal.iris = iris[short.sepal, ]
+dim(short.sepal.iris)
+head(short.sepal.iris)
+@
+
+\Sexpr{nrow(short.sepal.iris)} records with short sepals were retrieved.
+
+
+
+\subsection{Splitting the data frame into a list}
+%------------------------------------------------
+
+
+
+There are three different species in the \texttt{iris} dataset: 
+
+<<>>=
+unique(iris$Species)
+@
+
+We will separate the data for each species into three elements stored 
+in one list. First, let's create an empty list:
 
 <<>>=
 sp.data = list()
 @
 
 For each species, we now store the corresponding subset from the 
-\texttt{iris} dataset into the list:
+\texttt{iris} dataset into the list with a \texttt{for} loop:
 
 <<>>=
-species = levels(iris$Species) # we retrieve the different species names
-species 
+species = unique(iris$Species) # we retrieve the  species names
+species
+# now we go through a for loop
 for (sp in species) {
-  sp.data[[sp]] = subset(iris, iris$Species == sp)
+  # sp takes the values in species successively
+  # during the first iteration, sp is setosa
+  # during the second iteration, sp is versicolor
+  # during the third iteration, sp is virginica
+  #
+  species.rows = (iris$Species == sp) # condition on Species
+  # species.rows now contains TRUE/FALSE indicating the match 
+  # between the value of sp and the iris$Species column
+  #
+  sp.data[[sp]] = iris[species.rows, ]
+  # now we store the corresponding rows from the iris data frame, 
+  # taking all the columns, into sp.data, in an element with the 
+  # species name contained in sp
 }
 @
 
 The list should now have three elements, each element being a data 
-frame corresponding to a given species
+frame corresponding to a given species.
 
 <<>>=
-str(sp.data, 1)
+names(sp.data)
+@
+
+Let's check \textit{setosa}:
+
+<<>>=
+head(sp.data[["setosa"]])
+@
+
+And it is the same for \textit{versicolor} and \textit{virginica}:
+
+<<>>=
+head(sp.data[["versicolor"]])
+head(sp.data[["virginica"]])
 @
 
 
@@ -199,7 +401,9 @@ str(sp.data, 1)
 
 We want to calculate the average petal length for each iris species. For
 this, we first define a function that will calculate the average value
-for the column \texttt{Petal.Length} in a data frame.
+for the column \texttt{Petal.Length} in any data frame. This time we use
+the built-in \texttt{mean} function instead of \texttt{sum} and 
+\texttt{length}.
 
 <<>>=
 calculate.mean.petal.length = function(x) {
@@ -207,28 +411,8 @@ calculate.mean.petal.length = function(x) {
 }
 @
 
-We can then use a simple approach using a loop on the original dataset:
-
-<<>>=
-# prepare the data frame to store the results
-mean.lengths = data.frame(sp = vector(), petal.length = vector())
-row.i = 1
-# loop through the species
-for (sp in levels(iris$Species)) {
-  # get the data subset for a given species
-  sub.data = subset(iris, iris$Species == sp)
-  # apply the function
-  result = calculate.mean.petal.length(sub.data)
-  # store the result
-  mean.lengths[row.i, ] = c(sp, result)
-  row.i = row.i + 1
-}
-# display the results
-mean.lengths
-@
-
-A more elegant approach is to use \texttt{lapply} to apply the function on 
-each element of the list that we built previously.
+We can use \texttt{lapply} to apply the function on each element of the list 
+that we built previously.
 
 <<>>=
 # apply the function to each element of the list
@@ -236,11 +420,3 @@ mean.lengths = lapply(sp.data, calculate.mean.petal.length)
 # display the results
 mean.lengths
 @ 
-
-In the \texttt{lapply} approach, the data organization and the analysis are 
-clearly separated. The code is already a bit easier to read in this simple
-example, but the gain in readibility is usually more important in more complex
-code.
-
-
-

@@ -213,7 +213,7 @@ bold_table_rows = function(inputTable, rowIndices, digits = 5, format = "f") {
 % for vertical spacing http://tex.stackexchange.com/questions/50107/adjust-bottom-margin-of-a-listing-environment
 
 <<SweaveListingsPreparations, results=tex, echo=FALSE, strip.white=FALSE>>=
-options(prompt = ">", continue = " ") # http://stackoverflow.com/questions/6182395/how-to-produce-a-sweave-document-without-angle-bracket-in-front-of-code-chun
+options(prompt = " ", continue = " ") # http://stackoverflow.com/questions/6182395/how-to-produce-a-sweave-document-without-angle-bracket-in-front-of-code-chun
 require(SweaveListingUtils)
 # SweaveListingOptions has to be before SweaveListingPreparations
 SweaveListingOptions(Keywordstyle = "{\\color{Rkeywordcolor}}",

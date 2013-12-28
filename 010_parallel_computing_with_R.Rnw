@@ -108,8 +108,8 @@ its setup is quite simple.
 
 
 
-\subsection{Using \emph{apply} functions in \R code}
-%---------------------------------------------------
+\subsection{Using \emph{apply} functions in \R\ code}
+%----------------------------------------------_-----
 
 
 

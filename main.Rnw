@@ -71,19 +71,19 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-\SweaveInput{020_R_basics_for_parallel_code.Rnw}
+%\SweaveInput{020_R_basics_for_parallel_code.Rnw}
 
 \clearpage
 
-\SweaveInput{030_parallel_computing_on_a_local_computer.Rnw}
+%\SweaveInput{030_parallel_computing_on_a_local_computer.Rnw}
 
 \clearpage
 
-\SweaveInput{040_parallel_computing_on_CSC_servers.Rnw}
+%\SweaveInput{040_parallel_computing_on_CSC_servers.Rnw}
 
 \clearpage
 
-\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
+%\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
 
 \clearpage
 

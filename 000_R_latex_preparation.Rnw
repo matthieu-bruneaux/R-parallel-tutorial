@@ -170,7 +170,9 @@ bold_table_rows = function(inputTable, rowIndices, digits = 5, format = "f") {
 
 \newcommand\pvals{\textit{p}\nobreakdash-values} % p-value
 
-\usepackage{subfig} % for multiple figures in one
+\usepackage{caption}
+
+\usepackage{subcaption} % for multiple figures in one
 
 \usepackage[pdfborder={0 0 0}]{hyperref} % for hypertext links within the document
 

@@ -108,8 +108,8 @@ its setup is quite simple.
 
 
 
-\subsubsection{Using \texttt{apply} functions in \R code}
-%--------------------------------------------------------
+\subsubsection{Using \emph{apply} functions in \R code}
+%------------------------------------------------------
 
 
 
@@ -176,5 +176,22 @@ requires a bit more work to refactor it before being able to use it on
 multiple cores, but even then the amount of work is relatively minor and 
 involves mainly a wrapping of the analysis into a main function and a 
 storage of the data into a suitable list structure.
+
+
+
+\subsubsection{What will be done in this tutorial}
+%-------------------------------------------------
+
+
+
+This tutorial will focus on using the \texttt{list} object to store data and
+the \texttt{lapply} and \texttt{parLapply} functions to apply a function on 
+each element of a list. The first part of the tutorial is about the 
+\texttt{list} object structure and how to use it. The next part will describe
+how to run a script using \texttt{lapply} on several cores on a local computer.
+Finally, the last part will show how to run parallel code on CSC servers.
+
+The appendix contains some useful material concerning code benchmarking.
+
 
 

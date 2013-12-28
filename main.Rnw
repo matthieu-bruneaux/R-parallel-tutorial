@@ -14,7 +14,7 @@
 
 
 
-\documentclass[a4paper, 12pt]{article}
+\documentclass[a4paper, 12pt]{book}
 
 \SweaveInput{000_R_latex_preparation.Rnw}
 
@@ -44,6 +44,8 @@
 
 \clearpage
 
+\frontmatter
+
 \tableofcontents
 
 \clearpage
@@ -67,6 +69,8 @@ unloadNamespace("SweaveListingUtils")
 @
 
 
+\mainmatter
+
 \SweaveInput{010_parallel_computing_with_R.Rnw}
 
 \clearpage
@@ -86,6 +90,14 @@ unloadNamespace("SweaveListingUtils")
 %\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
 
 \clearpage
+
+\backmatter
+
+\appendix
+
+\clearpage
+
+\SweaveInput{A_010_benchmarking.Rnw}
 
 
 

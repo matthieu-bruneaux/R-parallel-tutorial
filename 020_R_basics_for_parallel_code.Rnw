@@ -1,11 +1,11 @@
-\section{R basics for parallel code}
-%-----------------------------------
+\section{\R\ basics for parallel code}
+%-------------------------------------
 
 
 
 This section describes the basics needed to run code on multiple cores using
-the \texttt{lapply} approach. It covers list creation and manipulation,
-\texttt{lapply} call and also introduces how to benchmark some code.
+the \texttt{lapply} approach. It covers list creation and manipulation and
+\texttt{lapply} call.
 
 
 
@@ -243,112 +243,4 @@ example, but the gain in readibility is usually more important in more complex
 code.
 
 
-
-\subsection{Benchmarking code}
-%-----------------------------
-
-
-\label{section_rbenchmark}
-
-
-
-Benchmarking is useful to determine how fast some pieces of code are run, and
-to compare different implementations of the same analysis to choose the 
-fastest one. The \texttt{rbenchmark} package provides a function to easily 
-benchmark R code.
-
-Benchmarked code is usually a small piece of code which is fast to run
-in itself but that is used a large number of times in an analysis.
-If this piece of code can be improved to run faster, the whole analysis run
-time can be substantially improved. Since one unit run of the piece of code 
-of interest is usually very fast, it is hard to compare two different 
-implementations of it just with a single unit run. The \texttt{benchmark} 
-function enables to replicate unit runs of different implementations of the 
-code of interest and provides a convenient summary
-comparison of the execution times. For very small pieces of code, the 
-\texttt{microbenchmark} package is also interesting.
-
-Here is a small example of the use of the \texttt{benchmark} function in
-which we compare two different implementation of a function to 
-calculate the mean of a vector.
-
-<<>>=
-# R built-in function
-mean.R.function = function(x) {
-  mean(x)
-}
-# manual coding
-mean.manual.loop = function(x) {
-  x.sum = 0
-  for (i in x) {
-    x.sum = x.sum + i
-  }
-  x.sum / length(x)
-}
-# prepare a test vector
-x = rnorm(1000)
-# run the benchmark
-library(rbenchmark)
-bmk = benchmark(mean.R.function(x), mean.manual.loop(x),
-                columns = c("test", "replications", 
-                            "elapsed", "relative"),
-                order = "relative",
-                replications = 1000)
-bmk
-@
-
-The functions are run \Sexpr{bmk$replications[1]} times. The function using
-the R built-in function is the fastest one, and the function using the 
-manually-coded loop is \Sexpr{round(bmk$relative[2], digits = 0)} times
-slower than the R built-in.
-
-We can use this \texttt{benchmark} function to compare the two previous
-methods to calculate the mean petal length of each iris species.
-
-<<>>=
-# first approach
-simple.approach = function(dataset) {
-  # prepare the data frame to store the results
-  mean.lengths = data.frame(sp = vector(), petal.length = vector())
-  row.i = 1
-  # loop through the species
-  for (sp in levels(dataset$Species)) {
-    # get the data subset for a given species
-    sub.data = subset(dataset, dataset$Species == sp)
-    # apply the function
-    result = calculate.mean.petal.length(sub.data)
-    # store the result
-    mean.lengths[row.i, ] = c(sp, result)
-    row.i = row.i + 1
-  }
-  # return the results
-  mean.lengths
-}
-simple.approach(iris)
-# second approach
-lapply.approach = function(dataset) {
-  # prepare the data
-  sp.data = list()
-  for (sp in levels(dataset$Species)) {
-    sp.data[[sp]] = subset(dataset, dataset$Species == sp)
-  }
-  # apply the function to each element of the list
-  mean.lengths = lapply(sp.data, calculate.mean.petal.length)
-  # return the results
-  mean.lengths
-}
-lapply.approach(iris)
-# benchmark
-bmk = benchmark(simple.approach(iris), lapply.approach(iris),
-                columns = c("test", "replications", 
-                            "elapsed", "relative"),
-                order = "relative",
-                replications = 100)
-bmk
-@
-
-The approach using \texttt{lapply} is a bit faster than the other one.
-However, we should bear in mind that this is a very simple example and 
-that the main gain in time resulting from \texttt{lapply} is the possibility
-to run the code on multiple cores at the same time.
 

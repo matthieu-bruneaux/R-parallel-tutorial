@@ -1,10 +1,10 @@
-\section{Parallel computing with \R}
+\chapter{Parallel computing with \R}
 %-----------------------------------
 
 
 
-\subsection{When can parallel computing be used?}
-%------------------------------------------------
+\section{When can parallel computing be used?}
+%---------------------------------------------
 
 
 
@@ -78,8 +78,8 @@ use one of the \R\ packages for parallel computing.
 
 
 
-\subsection{Approach to parallel computing with \R\ used in this document}
-%-----------------------------------------------------------------------
+\section{Approach to parallel computing with \R\ used in this document}
+%----------------------------------------------------------------------
 
 
 
@@ -94,8 +94,8 @@ search for \href {https://github.com/search?q=r+parallel&ref=cmdform}{\texttt
 
 
 
-\subsubsection{Packages and resources for parallel computing with \R}
-%--------------------------------------------------------------------
+\subsection{Packages and resources for parallel computing with \R}
+%-----------------------------------------------------------------
 
 
 
@@ -108,8 +108,8 @@ its setup is quite simple.
 
 
 
-\subsubsection{Using \emph{apply} functions in \R code}
-%------------------------------------------------------
+\subsection{Using \emph{apply} functions in \R code}
+%---------------------------------------------------
 
 
 
@@ -179,8 +179,8 @@ storage of the data into a suitable list structure.
 
 
 
-\subsubsection{What will be done in this tutorial}
-%-------------------------------------------------
+\subsection{What will be done in this tutorial}
+%----------------------------------------------
 
 
 

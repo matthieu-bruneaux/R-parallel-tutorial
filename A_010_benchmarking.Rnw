@@ -108,3 +108,133 @@ The approach using \texttt{lapply} is a bit faster than the other one.
 However, we should bear in mind that this is a very simple example and 
 that the main gain in time resulting from \texttt{lapply} is the possibility
 to run the code on multiple cores at the same time.
+
+
+
+\chapter{Benchmarking - speed gain with cluster over serial function}
+%--------------------------------------------------------------------
+
+
+% (from 030_parallel_computing_on_a_local_computer)
+
+
+We can compare the speed improvement with the \texttt{rbenchmark library}
+(section \ref{section_rbenchmark}). We first have to define the two functions
+that will be benchmarked. The task for which they will be compared is 
+the bootstrap analysis above (i.e., generate \Sexpr{n.bootstrap} bootstrapped
+slope values).
+
+<<>>=
+# serial function
+run.serial.bootstrap = function() {
+  
+  # generate the bootstrap resamples
+  resamples = list()
+  for (i in 1:n.bootstrap) {
+    # first draw randomly the row indices for the resample
+    resampled.rows = sample(1:nrow(cars), replace = T)
+    # then store the resample data into the list
+    resamples[[i]] = cars[resampled.rows, ]
+  }
+  
+  # function to get the linear model
+  linear.fit = function(car.data) {
+    # calculate speed.squared
+    car.data$speed.squared = car.data$speed ^ 2
+    # linear model
+    model.resample = lm(car.data$dist ~ car.data$speed.squared)
+    # return the model
+    model.resample
+  }
+  
+  # run the linear model to get the bootstrapped slopes
+  slopes = vector()
+  for (i in 1:n.bootstrap) {
+    # run the model on one resample
+    model = linear.fit(resamples[[i]])
+    # store the bootstrapped slope
+    slopes[i] = model$coefficients[2]
+  }
+  
+  # return the bootstrapped slopes
+  slopes
+  
+}
+@
+
+For the parallel function, we adopt a slightly different approach compared to
+before: since the serial function generates the bootstrap resamples on the fly,
+it is also fair that the bootstrap function generates it the same way, and does
+not make use of a pre-calculated bootstrap resample dataset.
+
+We also make use of a function \texttt{linear.fit} inside the function itself,
+just to keep the same overhead of function calls between the serial and the
+parallel approach.
+
+<<>>=
+# parallel function
+parallel.bootstrap = function(i) {
+  # We specify one argument i because parLapply will send an 
+  # argument to the function for each simulation.
+  
+  ## generate a bootstrap resample
+  # first draw randomly the row indices for the resample
+  resampled.rows = sample(1:nrow(cars), replace = T)
+  # then store the resample data into the list
+  resample = cars[resampled.rows, ]
+  
+  # function to get the linear model
+  linear.fit = function(car.data) {
+    # calculate speed.squared
+    car.data$speed.squared = car.data$speed ^ 2
+    # linear model
+    model.resample = lm(car.data$dist ~ car.data$speed.squared)
+    # return the model
+    model.resample
+  }
+  
+  # run the linear model
+  model = linear.fit(resample)
+  
+  # return the slope
+  model$coefficients[2]
+  
+}
+@
+
+This function has to be used with a cluster.
+
+<<>>=
+run.parallel.bootstrap = function() {
+  # initialize cluster
+  cluster = makeSOCKcluster(rep("localhost", n.cores))
+  # prepare the simulation indices
+  sim.i = as.list(1:n.bootstrap)
+  # run the simulation
+  bootstrapped.slopes = parLapply(cluster, sim.i, parallel.bootstrap)
+  # stop the cluster
+  stopCluster(cluster)
+  # return the bootstrapped slopes as a vector, not a list
+  unlist(bootstrapped.slopes, use.names = F)
+}
+@
+
+Now let's run the benchmark.
+
+<<>>=
+library(rbenchmark)
+bmk = benchmark(run.serial.bootstrap(), run.parallel.bootstrap(),
+                columns = c("test", "replications", 
+                            "elapsed", "relative"),
+                order = "relative",
+                replications = 2)
+bmk
+@
+
+In this case (with \Sexpr{n.cores} cores), the parallel run is actually longer 
+than the serial run ! This is probably due to the fact that the analysis in 
+itself is extremely fast, and the overhead of setting up the cluster and 
+dispatching the calculation to each node is actually more costly than the 
+analysis itself. However, when the analysis is a long one, the overhead from 
+using the cluster will become negligible compared to the analysis time itself, 
+and the time for a run will be divided by the number of cores.

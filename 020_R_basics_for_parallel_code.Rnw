@@ -150,8 +150,8 @@ for (object in lst) {
 
 
 
-\section{Using \texttt{sapply} and \texttt{lapply}}
-%--------------------------------------------------
+\section{Using \texttt{sapply} and \texttt{lapply} on a vector and a list}
+%-------------------------------------------------------------------------
 
 
 
@@ -201,13 +201,8 @@ store data into a list from an existing dataset and of using \texttt{lapply}.
 
 
 
-\section{Building a list from an existing dataset: splitting a data frame}
-%-------------------------------------------------------------------------
-
-
-
-\subsection{Basic data frame manipulation}
-%-----------------------------------------
+\section{Basic data frame manipulation}
+%--------------------------------------
 
 
 
@@ -216,10 +211,10 @@ in a text file from Excel and loaded into \R\ using \texttt{read.table} for
 example, or stored into separate files on the disk) into a list, dividing the 
 original dataset into separated list elements.
 
-\texttt{iris} is a dataset shipped with R that we will use in this short
-example. It is a \emph{data frame}, which is equivalent to a table containing 
-data arranged in columns. Each row represents a record and each column 
-represents a variable.
+When a data set is loaded from a text file (e.g. produced by Excel), it is 
+usually stored as a \emph{data frame}. \texttt{iris} is a dataset shipped with R that 
+we will use in this short example. It is a data frame, which is equivalent to a 
+table containing data arranged in columns. Each row represents a record and each column represents a variable.
 
 <<>>=
 class(iris) # data frame
@@ -327,6 +322,59 @@ head(short.sepal.iris)
 @
 
 \Sexpr{nrow(short.sepal.iris)} records with short sepals were retrieved.
+
+
+
+\section{Using \texttt{apply} on a data frame}
+%---------------------------------------------
+
+
+
+\texttt{apply} is the apply family function that can be used to apply one 
+function on every row or every column of a data frame. A call to \texttt{apply}
+must provide the input data frame, specify if it has to work on rows or columns,
+and provide the function to apply to each row or column.
+
+For example, we can calculate the mean and standard deviation for each column
+of the \texttt{iris} dataset:
+
+<<>>=
+head(iris[, 1:4]) # we use only the first four columns
+apply(iris[, 1:4], 2, mean) # 2 specifies to work on columns, and mean
+                     # is the function we apply to each column
+apply(iris[, 1:4], 2, sd) # sd calculates standard deviation
+@
+
+Let's build a data frame for which we will calculate the row means:
+
+<<>>=
+# prepare an empty matrix
+a = matrix(nrow = 3, ncol = 5)
+# fill the rows with random numbers
+a[1, ] = rnorm(5, 7) # 5 samples from a normal distribution with mean 7
+a[2, ] = rnorm(5, 5) # 5 samples from a normal distribution with mean 5
+a[3, ] = rnorm(5, 2) # 5 samples from a normal distribution with mean 2
+a
+# convert the matrix to a data frame
+a = as.data.frame(a)
+a
+# apply the mean function to each row
+apply(a, 1, mean) # 1 specifies to work on rows
+@
+
+
+
+\section{Arranging data into a list and using \texttt{lapply}}
+%-------------------------------------------------------------
+
+
+
+In this example, we assume that our data is stored in a unique data frame, 
+\texttt{iris}. This data frame contains data for several different species of
+iris, and we would like to perform an analysis for each species. To do so,
+we will split the data from the data frame into species specific data blocks, 
+stored in a list, and then apply an analysis function to each element of the
+list with \texttt{lapply}.
 
 
 

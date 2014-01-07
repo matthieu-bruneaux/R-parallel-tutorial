@@ -79,7 +79,7 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-%\SweaveInput{030_parallel_computing_on_a_local_computer.Rnw}
+\SweaveInput{030_parallel_computing_on_a_local_computer.Rnw}
 
 \clearpage
 

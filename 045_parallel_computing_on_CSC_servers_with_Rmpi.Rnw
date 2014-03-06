@@ -1,0 +1,126 @@
+\chapter{Parallel computing on CSC servers, more than one node (\texttt{Rmpi} library)}
+%--------------------------------------------------------------------------------------
+
+
+
+\chaptermark{Parallel computing on CSC servers (\texttt{Rmpi})}
+
+
+
+The use of the \textt{snow} library described in this tutorial does not allow
+to use more than one node for a parallel run, and thus limits the number of
+cores that can be used on \texttt{Taito} to 16. It might be possible to go
+beyond this limit using \texttt{snow}, but I didn't find how to use it for this
+purpose. Instead, I used the \texttt{Rmpi} library.
+
+The \texttt{Rmpi} library can be used in the same way as \texttt{snow}:
+\begin{itemize}
+  \item Store the input data as a list.
+  \item Define a function to perform the analysis. This function will be applied
+    to each element of the list, independently.
+  \item Run the analysis using a parallelized version of \texttt{lapply}.
+\end{itemize}
+
+The differences are thus extremely small and a script which is running
+successfully with \texttt{lapply} or \texttt{parLapply} from \texttt{snow} can
+be modified to run with \texttt{Rmpi} in a few minutes. The advantage is that
+several nodes can then be requested on \texttt{Taito}, enabling to use e.g. 32
+or 64 cores at a time.
+
+
+
+\section{Preparing the script locally}
+%-------------------------------------
+
+
+
+We use the same coin-flipping script as in the previous section with minor
+modifications (\texttt{flipping.conis.Rmpi.R}).
+
+<<echo=TRUE, eval=FALSE>>=
+# flipping.coins.Rmpi.R
+
+# flipping coins script for a parallel run on Taito
+
+# trial function
+toss.coin = function(i = 0) {
+  # This function takes one dummy argument in order to be callable by 
+  # parLapply, but does not use it.
+  # Simulate the trial
+  trial = sample(c("H", "T"), size = 1000000, replace = T)
+  # return the proportion of heads
+  sum(trial == "H") / length(trial)
+}
+
+# initialize the cluster
+library(Rmpi)
+
+# run
+index = as.list(1:100)
+# here we use system.time to time the execution of the simulations
+# we have to enclose the expression to time between { and }
+# print will force the output to stdout
+print(system.time({simulations = mpi.parLapply(index, toss.coin)}))
+
+# save the results
+write.table(unlist(simulations), "flipping.coins.results")
+
+# stop the cluster
+mpi.close.Rslaves()
+mpi.quit()
+@
+
+The differences are:
+\begin{itemize}
+  \item We use \texttt{library(Rmpi)} instead of \texttt{library{snow}).
+  \item We don't have to initialize the cluster and to specify a number of 
+    cores: \texttt{Rmpi} will use the available cores when the library is 
+    loaded. The number of cores is thus entirely determined in the 
+    \texttt{sbatch} file for the job submission.
+  \item We use \texttt{mpi.parLapply} instead of \texttt{parLapply} and we 
+    don't have to specify the cluster in the arguments.
+  \item We stop the cluster using \texttt{mpi.close.Rslaves()} and
+    \texttt{mpi.quit()}.
+\end{itemize}
+
+
+
+\section{Preparing the sbatch file}
+%----------------------------------
+
+
+
+Here is the sbatch file we use with \texttt{Rmpi} (\texttt{R.Rmpi.sh}):
+
+\begin{Schunk}
+\begin{Sinput}
+#!/bin/bash -l
+#SBATCH -J Rmpi
+#SBATCH -o output_%J.txt
+#SBATCH -e errors_%J.txt
+#SBATCH -t 2:00:00
+#SBATCH -n 64
+#SBATCH -p parallel
+#SBATCH --mem-per-cpu=4000
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=toto@utu.fi
+
+module load R.latest/latest
+srun -u -n 64 Rmpi --no-save < flipping.coins.Rmpi.R
+\end{Sinput}
+\end{Schunk}
+
+The differences with the previous \texttt{sbatch} file are:
+\begin{itemize}
+  \item We use the \texttt{-n} option to ask for 64 cores.
+  \item We specify that the job has to be run on the parallel partition
+    with \texttt{-p parallel}
+  \item We don't have to specify the number of nodes nor the number of cpus
+    per task.
+  \item Here we also ask for mail for \texttt{ALL} actions (i.e. start and end)
+    since it sometimes takes time to start the job, and it is good to know that
+    it actually started.
+\end{itemize}
+
+We also have to be careful about specifying the same number of requested cores
+for the \texttt{srun} command.

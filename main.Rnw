@@ -83,11 +83,11 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-%\SweaveInput{040_parallel_computing_on_CSC_servers.Rnw}
+\SweaveInput{040_parallel_computing_on_CSC_servers.Rnw}
 
 \clearpage
 
-%\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
+\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
 
 \clearpage
 
@@ -97,7 +97,7 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-%\SweaveInput{A_010_benchmarking.Rnw}
+\SweaveInput{A_010_benchmarking.Rnw}
 
 
 

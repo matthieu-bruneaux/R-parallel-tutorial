@@ -1,64 +1,68 @@
-\chapter{Parallel computing on a local computer}
-%-----------------------------------------------
+\section[Parallel computing on a local computer]{Parallel computing on a local 
+  computer \footnote{The examples given in this section assume a good
+    knowledge of the R basics, including loops, linear models and
+    plotting. However, even if you only know the basics which were
+    introduced in the previous section, you should be able to grasp
+    the general ideas presented here.}}
+%-----------------------------------------------------------------------------
 
 
 
 \label{section.parallel.local.computer}
 
 
-(Note: the examples given in this section assume a good knowledge of the 
-\R\ basics, including loops, linear models and plotting. However, even if you 
-only know the basics which were introduced in the previous section, you should 
-be able to grasp the general ideas presented here).
 
-
-
-Parallel computing produces results in a shorter time not by calculating 
-faster, but by running several independent calculations at the same time. 
-If we make an analogy between a car factory and an \R\ script, parallelization 
-speeds up the car production not by making the assembly line work faster, but 
+Parallel computing produces results in a shorter time not by calculating
+faster, but by running several independent calculations at the same time.  If
+we make an analogy between a car factory and an R script, parallelization
+speeds up the car production not by making the assembly line work faster, but
 by providing several assembly lines working at the same speed in parallel.
 
-For an \R\ script to be run in parallel, several steps are needed:
+In this section we provide an example of parallel computing for bootstrap
+analysis, using the \texttt{snow} library.
+
+
+
+\subsection{Reminder: steps to write parallel code}
+%--------------------------------------------------
+
+
+
+For an R script to be run in parallel, several steps are needed:
 \begin{itemize}
-  \item The data must be stored as elements of, e.g.,  a list.
+  \item The data must be stored as elements of a list.
   \item The analysis must be contained into a function that can be applied
-        on each element of this list.
+    (independently) on each element of this list.
 \end{itemize}
 
-We have seen a simple example with the \texttt{iris} dataset covering those two
-points in the previous section. The next steps are:
-\begin{itemize}
-  \item The \R\ script must be able to control several cores.
-  \item Each core must be given the information needed (i.e. variables and 
-        functions).
-  \item A parallel version of the appropriate \emph{apply}  function must 
-        (e.g. \texttt{parLapply} if \texttt{lapply} and lists are used, 
-        \texttt{parSapply} if \texttt{sapply} and vectors are used) distribute 
-        the calls of the analysis function to each element of the input data on 
-        the different cores.
+We have seen a simple example covering those two points in the previous
+section. The next steps are:
+\begin{enumerate}
+  \item The R script must be able to control several cores.
+  \item Each core must be given the information needed (i.e. variables and
+    functions).
+  \item A parallel version of \texttt{lapply} must distribute the calls of the
+    analysis function to each element of the data list on the different cores.
   \item Depending on the output of the analysis function, a last step might
-        involve collecting the results from parallel processes into a single 
-        object.
-\end{itemize}
+    involve collecting the results from parallel processes into a single
+    object.
+\end{enumerate}
 
-For a bootstrap analysis to be run in parallel, two different approaches can
-be used:
+For a bootstrap analysis to be run in parallel, two different approaches can be
+used:
 \begin{itemize}
   \item Generate bootstrap resamples, store them in a list and apply the
-        analysis function on each element of the list to obtain a parameter
-        distribution for the bootstrap resamples. Here a list and 
-        \texttt{parLapply} can be used.
-  \item Store indices in a vector (e.g. from 1 to 10000), and apply the analysis
-        function to them. In this case the bootstrap resample generation is done
-        within the analysis function, and the memory needs are reduced. Here a
-        vector and \texttt{parSapply} can be used.
+    analysis function on each element of the list to obtain a parameter
+    distribution for the bootstrap resamples.
+  \item Store indices in a list (e.g. from 1 to 10000), and apply the analysis
+    function to them. In this case the bootstrap resample generation is done
+    within the analysis function, and the memory needs are reduced.
 \end{itemize}
 
 
 
-\section{Basic cluster setup: bootstrapping regression models}
-%-------------------------------------------------------------
+\subsection{Basic cluster setup}
+%-------------------------------
 
 
 
@@ -74,9 +78,8 @@ that there should be a linear relationship between the square of the speed
 $v^2$ and the stopping distance $d$ (if we assumes the cars weighed the same).
 
 <<>>=
-head(cars)
 str(cars)
-# calculate v^2 and store it in the cars data frame
+# calculate v^2
 cars$speed.squared = cars$speed ^ 2
 # fit a linear regression on the observed data
 model.observed = lm(cars$dist ~ cars$speed.squared)
@@ -124,22 +127,22 @@ parallel. The steps we are going to follow are:
 
 
 
-\subsection{Preparing bootstrap resamples}
-%-----------------------------------------
+\subsubsection{Preparing bootstrap resamples}
+%--------------------------------------------
 
 
 
 <<echo=FALSE>>=
-n.bootstrap = 1000
+n.bootstrap = 100
 @
 
 \Sexpr{n.bootstrap} bootstrap resamples are generated and stored into a list.
 
 <<>>=
-n.bootstrap = 1000
+n.bootstrap = 100
 # empty list
 resamples = list()
-# generate the resamples in a for loop
+# generate the resamples
 for (i in 1:n.bootstrap) {
   # first draw randomly the row indices for the resample
   resampled.rows = sample(1:nrow(cars), replace = T)
@@ -150,8 +153,8 @@ for (i in 1:n.bootstrap) {
 
 
 
-\subsection{Defining the function for analysis}
-%----------------------------------------------
+\subsubsection{Defining the function for analysis}
+%-------------------------------------------------
 
 
 
@@ -171,8 +174,8 @@ linear.fit = function(car.data) {
 
 
 
-\subsection{Setting up the cluster and running the bootstrap}
-%------------------------------------------------------------
+\subsubsection{Setting up the cluster and running the bootstrap}
+%---------------------------------------------------------------
 
 
 
@@ -180,16 +183,14 @@ To use multiple cores, we set up a cluster using the \texttt{snow} package.
 
 <<>>=
 library(snow)
-# define the number of cores (this should not exceed the number of 
-# cores on the local computer used)
+# define the number of cores
 n.cores = 3
 # create the cluster with as many cores as needed
 cluster = makeSOCKcluster(rep("localhost", n.cores))
 @
 
 The cluster is now ready. We can run the analysis in parallel using the
-\texttt{parLapply} function instead of the \texttt{lapply} function that we
-would have used for a single core run.
+\texttt{parLapply} function.
 The usage is the same as for \texttt{lapply}, except that we have to specify
 the cluster as the first argument. The output is also a list.
 
@@ -206,20 +207,17 @@ stopCluster(cluster)
 
 
 
-\subsection{Examining the results}
-%---------------------------------
+\subsubsection{Examining the results}
+%------------------------------------
 
 
-
-The parallel steps were performed above. The following steps are only a 
-manipulation of the results to put them in a useful format.
 
 Let's extract the slopes from the models:
 
 <<>>=
 # extract the slopes from the bootstrapped models with lapply
 # (we define a function on the fly to extract the slopes, which
-# are stored in model$coefficients[2] for each model)
+#  are stored in model$coefficients[2] for each model)
 bootstrap.slopes = lapply(bootstrap.models,
                           function(x) x$coefficients[2])
 @
@@ -263,7 +261,7 @@ plot(cars$speed.squared, cars$dist, bty = "n", las = 1, pch = 21, bg = "grey",
      xlab = "speed.squared", ylab = "dist", type = "n")
 a = lapply(bootstrap.models, function(x) abline(x$coefficients, 
                                 col = adjustcolor("dodgerblue", 
-                                                  1/(max(n.bootstrap/10, 10)))))
+                                                  1/(max(n.bootstrap/5, 10)))))
 points(cars$speed.squared, cars$dist, las = 1, pch = 21, 
        bg = "grey")
 abline(model.observed, col = "red", lwd = 2)
@@ -283,16 +281,141 @@ is shown in figure \ref{fig.car.bootstrap.regression}.
 
 
 
+\subsection{Benchmarking - speed gain with cluster over serial function}
+%-----------------------------------------------------------------------
 
 
 
-\section{Exporting variables to each cluster node}
-%-------------------------------------------------
+We can compare the speed improvement with the \texttt{rbenchmark library}
+(section \ref{section_rbenchmark}). We first have to define the two functions
+that will be benchmarked. The task for which they will be compared is 
+the bootstrap analysis above (i.e., generate \Sexpr{n.bootstrap} bootstrapped
+slope values).
+
+<<>>=
+# serial function
+run.serial.bootstrap = function() {
+  
+  # generate the bootstrap resamples
+  resamples = list()
+  for (i in 1:n.bootstrap) {
+    # first draw randomly the row indices for the resample
+    resampled.rows = sample(1:nrow(cars), replace = T)
+    # then store the resample data into the list
+    resamples[[i]] = cars[resampled.rows, ]
+  }
+  
+  # function to get the linear model
+  linear.fit = function(car.data) {
+    # calculate speed.squared
+    car.data$speed.squared = car.data$speed ^ 2
+    # linear model
+    model.resample = lm(car.data$dist ~ car.data$speed.squared)
+    # return the model
+    model.resample
+  }
+  
+  # run the linear model to get the bootstrapped slopes
+  slopes = vector()
+  for (i in 1:n.bootstrap) {
+    # run the model on one resample
+    model = linear.fit(resamples[[i]])
+    # store the bootstrapped slope
+    slopes[i] = model$coefficients[2]
+  }
+  
+  # return the bootstrapped slopes
+  slopes
+  
+}
+@
+
+For the parallel function, we adopt a slightly different approach compared to
+before: since the serial function generates the bootstrap resamples on the fly,
+it is also fair that the bootstrap function generates it the same way, and does
+not make use of a pre-calculated bootstrap resample dataset.
+
+We also make use of a function \texttt{linear.fit} inside the function itself,
+just to keep the same overhead of function calls between the serial and the
+parallel approach.
+
+<<>>=
+# parallel function
+parallel.bootstrap = function(i) {
+  # We specify one argument i because parLapply will send an 
+  # argument to the function for each simulation.
+  
+  ## generate a bootstrap resample
+  # first draw randomly the row indices for the resample
+  resampled.rows = sample(1:nrow(cars), replace = T)
+  # then store the resample data into the list
+  resample = cars[resampled.rows, ]
+  
+  # function to get the linear model
+  linear.fit = function(car.data) {
+    # calculate speed.squared
+    car.data$speed.squared = car.data$speed ^ 2
+    # linear model
+    model.resample = lm(car.data$dist ~ car.data$speed.squared)
+    # return the model
+    model.resample
+  }
+  
+  # run the linear model
+  model = linear.fit(resample)
+  
+  # return the slope
+  model$coefficients[2]
+  
+}
+@
+
+This function has to be used with a cluster.
+
+<<>>=
+run.parallel.bootstrap = function() {
+  # initialize cluster
+  cluster = makeSOCKcluster(rep("localhost", n.cores))
+  # prepare the simulation indices
+  sim.i = as.list(1:n.bootstrap)
+  # run the simulation
+  bootstrapped.slopes = parLapply(cluster, sim.i, parallel.bootstrap)
+  # stop the cluster
+  stopCluster(cluster)
+  # return the bootstrapped slopes as a vector, not a list
+  unlist(bootstrapped.slopes, use.names = F)
+}
+@
+
+Now let's run the benchmark.
+
+<<>>=
+library(rbenchmark)
+bmk = benchmark(run.serial.bootstrap(), run.parallel.bootstrap(),
+                columns = c("test", "replications", 
+                            "elapsed", "relative"),
+                order = "relative",
+                replications = 2)
+bmk
+@
+
+In this case (with \Sexpr{n.cores} cores), the parallel run is actually longer 
+than the serial run ! This is probably due to the fact that the analysis in 
+itself is extremely fast, and the overhead of setting up the cluster and 
+dispatching the calculation to each node is actually more costly than the 
+analysis itself. However, when the analysis is a long one, the overhead from 
+using the cluster will become negligible compared to the analysis time itself, 
+and the time for a run will be divided by the number of cores.
 
 
 
-\subsection{Flipping coins}
-%--------------------------
+\subsection{Exporting variables to each cluster node}
+%----------------------------------------------------
+
+
+
+\subsubsection{Flipping coins}
+%-----------------------------
 
 
 
@@ -327,8 +450,8 @@ This time the head frequency is
 
 
 
-\subsection{Flipping in parallel}
-%--------------------------------
+\subsubsection{Flipping in parallel}
+%-----------------------------------
 
 
 
@@ -383,8 +506,8 @@ simulations.
 
 
 
-\subsection{Flipping an unfair coin}
-%-----------------------------------
+\subsubsection{Flipping an unfair coin}
+%--------------------------------------
 
 
 
@@ -455,8 +578,8 @@ loaded with the package.
 
 
 
-\section{Parallel computing and random number generation}
-%--------------------------------------------------------
+\subsection{Parallel computing and random number generation}
+%-----------------------------------------------------------
 
 
 

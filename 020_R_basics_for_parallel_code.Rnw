@@ -364,8 +364,8 @@ apply(a, 1, mean) # 1 specifies to work on rows
 
 
 
-\section{Arranging data into a list and using \texttt{lapply}}
-%-------------------------------------------------------------
+\section{Example: arranging data into a list and using \texttt{lapply}}
+%----------------------------------------------------------------------
 
 
 

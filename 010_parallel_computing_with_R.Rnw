@@ -12,7 +12,7 @@ Parallel computing enables to do calculations simultaneously on several cores.
 If a desktop computer has a multi-core processor, it usually uses only one
 core at a time to run an \R\ session. However, for certain analyses, it is 
 possible to take advantage of the presence of several cores and to run 
-independent parts of an analysis on different cores, simultaneously
+independent parts of the analysis on different cores, simultaneously
 (figure \ref{fig.comparison.single.multiple.cores}).
 
 Not all analyses can be performed using parallel computing. Some analyses 
@@ -36,37 +36,40 @@ time, independently, on different inputs. Here are some examples:
 \end{itemize}
 
 After the parallel step, another step is often necessary to gather the results
-produced independently (e.g. concatenate the results for each chromosome into
-a single table or pool the results of all the bootstrap simulations to 
-calculate p-values). However, the most time-consuming step is usually the one
-which can be distributed on multiple cores.
+produced independently (e.g. concatenate the results for each chromosome into a
+single table or pool the results of all the bootstrap simulations to calculate
+p-values). However, the most time-consuming step is usually the one which can
+be distributed on multiple cores.
 
 \begin{figure}
   \begin{center}
     \includegraphics[width=\linewidth]{../figures/analysis_all.pdf}
   \end{center}
   \caption[Comparison of performances between single and multiple core runs]
-  {Comparison of performances between single and multiple core runs. One 
-  orange circle represents one cpu.time unit (e.g. the amount of 
-  calculations performed by one core during one hour). In A, a simple 
-  analysis needs one cpu.time unit to be run (e.g. a one hour run with one 
-  core). In B, a longer analysis is performed, which needs 5 cpu.time units 
-  (e.g. a five hour run with one core). In this case, each step of the 
-  analysis depends on the previous one, and the run has to be sequential. In 
-  C, however, the analysis is the same as in A but is performed on a larger 
-  amount of input data. The analysis requires three cpu.time units (the 
-  three orange circles, e.g. a three hour run with one core). Since the 
-  analysis performed in C is actually independent for each data packet, it 
-  can be parallelized as shown in D and run in only one time unit if three 
-  cores are used (e.g. a one hour parallel run with three cores). The amount 
-  of calculations performed is the same as in C (three cpu.time units), but 
-  the elapsed time is shorter since three cores were working at the same 
-  time. The sequential analysis in B cannot be made faster by 
-  parallelization since each analysis step depends on the previous step 
-  (true sequential analysis), but if the analysis pipeline has to be run on 
-  several data packets independently then it can be parallelized to make the 
-  analysis run faster when there is more data as shown in E (e.g a five hour 
-  run with three cores instead of a 15 hour run with one core).}
+          {Comparison of performances between single and multiple core
+            runs. Each orange circle represents one cpu.time unit (e.g. the
+            amount of calculations performed by one core during one hour). In
+            A, a simple analysis needs one cpu.time unit to be run (e.g. a one
+            hour run with one core). In B, a longer analysis is performed,
+            which needs 5 cpu.time units (e.g. a five hour run with one
+            core). In this case, each step of the analysis depends on the
+            previous one, and the run has to be sequential. In C, however, the
+            analysis is the same as in A but is performed on a larger amount of
+            input data. The analysis requires three cpu.time units (the three
+            orange circles, e.g. a three hour run with one core). Since the
+            analysis performed in C is actually independent for each data
+            packet, it can be parallelized as shown in D and run in only one
+            time unit if three cores are used (e.g. a one hour parallel run
+            with three cores). The amount of calculations performed is the same
+            as in C (three cpu.time units), but the elapsed time is shorter
+            since three cores were working at the same time. The sequential
+            analysis in B cannot be made faster by parallelization since each
+            analysis step depends on the previous step (true sequential
+            analysis), but if the analysis pipeline has to be run on several
+            data packets independently then it can be parallelized to make the
+            analysis run faster when there is more data as shown in E (e.g a
+            five hour run with three cores instead of a 15 hour run with one
+            core).}
   \label{fig.comparison.single.multiple.cores}
 \end{figure}
 
@@ -104,7 +107,10 @@ A list of useful packages can be found on the \href
 webpage} concerning \R\ and high performance computing. There are  many 
 different options; I will focus on the \texttt{snow} package since I managed 
 to use this one both on a CSC server (Taito) and on my desktop computer and 
-its setup is quite simple.
+its setup is quite simple. The approach described here with \texttt{snow}
+works well with a personal computer or when using a single node on Taito
+(each Taito node contains 16 cores), but for analyses using multiple nodes
+(e.g. 32 or 64 cores) we will use the \texttt{Rmpi} package.
 
 
 
@@ -113,17 +119,17 @@ its setup is quite simple.
 
 
 
-The approach explained in this document relies on the use of the \emph 
-{apply} family of functions in \R. Those functions are \texttt{apply}, 
-\texttt{sapply} and \texttt{lapply} and are part of the \texttt{base} 
-package. They are seldom used by \R\ users when they just start to learn \R, 
-but they are of considerable interest when one becomes more familiar with 
-the language. The documentation can be accessed by typing \texttt{?apply} or 
-\texttt{?lapply} in \R.
+The approach explained in this document relies on the use of the \emph {apply}
+family of functions in \R. Those functions are \texttt{apply}, \texttt{sapply}
+and \texttt{lapply} and are part of the \texttt{base} package. They are seldom
+used by \R\ users when they just start to learn \R, but they are of
+considerable interest when one becomes more familiar with the language. The
+documentation can be accessed by typing \texttt{?apply} or \texttt{?lapply} in
+\R.
 
-Each function of this family takes as an input an object made of several 
-elements (e.g. a vector) and applies a function on each element of this 
-object. Here is a very simple example using a vector of numbers, and 
+Each function of this family takes as an input an object made of several
+elements (e.g. a vector or a list) and applies a function on each element of
+this object. Here is a very simple example using a vector of numbers, and
 returning the square of each number:
 
 <<label=sapply.simple.example>>=
@@ -146,50 +152,73 @@ sapply(v, f)
 sapply(5:15, f)
 @
 
-\texttt{apply}, \texttt{sapply} and \texttt{lapply} differ in the type of 
-objects on which they work: \texttt{sapply} will apply a function on each 
-element of a \emph{vector}, \texttt{lapply} on each element of a \emph{list} 
-and \texttt{apply} on each row or each column of a \emph{matrix}. Since 
-those functions work on each element of an object independently from the 
-other elements, they are easily amenable to parallelization. This is done in 
-a very simple manner with the \texttt{snow} package: the function names just 
-have to be replaced with the corresponding \texttt{parApply}, 
-\texttt{parSapply} or \texttt{parLapply} functions. 
+\texttt{apply}, \texttt{sapply} and \texttt{lapply} differ in the type of
+objects on which they work:
+\begin{itemize}
+\item \texttt{sapply} will apply a function on each element of a \emph{vector}
+\item \texttt{lapply} on each element of a \emph{list} 
+\item \texttt{apply} on each row or each column of a \emph{matrix}
+\end{itemize}
+Since those functions work on each element of an object independently from the
+other elements, they are easily amenable to parallelization. This is done in a
+very simple manner with the \texttt{snow} package: the function names just have
+to be replaced with the corresponding \texttt{parSapply}, \texttt{parLapply} or
+\texttt{parApply} parallelized functions.
 
-An efficient use of \texttt{apply}, \texttt{sapply} and \texttt{lapply} 
-requires a good understanding of the \texttt{vector}, \texttt{list} and 
-\texttt{matrix} or \texttt{data.frame} objects. In particular, we will be 
-using the list object which is very versatile but might seem a bit daunting 
-to users without any prior experience with it. Using the \texttt{apply} 
-family of functions tends to produce cleaner and better code - cleaner since 
-the user has to structure the data efficiently into e.g. lists and to divide 
-its code into separate functions, and better because the code is easier to 
-read and to debug - and is of interest even for code which is not intended 
-to be used on multiple cores.
+An efficient use of \texttt{sapply}, \texttt{lapply} and \texttt{apply}
+requires a good understanding of the \texttt{vector}, \texttt{list} and
+\texttt{matrix} or \texttt{data.frame} objects. In particular, we will be using
+the list object which is very versatile but might seem a bit daunting to users
+without any prior experience with it.
 
-Running code which already uses any \texttt{apply} family function on 
-multiple cores requires only a few modifications, such as setting up the 
-core cluster at the beginning of the script and converting the \emph{apply} 
-calls to the corresponding \emph{parApply} calls. Running code which is 
-already working fine but without using any \emph{apply} function yet 
-requires a bit more work to refactor it before being able to use it on 
-multiple cores, but even then the amount of work is relatively minor and 
-involves mainly a wrapping of the analysis into a main function and a 
-storage of the data into a suitable list structure.
+Using the \texttt{apply} family of functions tends to produce cleaner and
+better code - cleaner since the user has to structure the data efficiently into
+e.g. lists and to divide its code into separate functions, and better because
+the code is easier to read and to debug - and is of interest even for code
+which is not intended to be used on multiple cores.
 
 
 
-\subsection{What will be done in this tutorial}
+\subsection{Refactoring code for parallel runs}
 %----------------------------------------------
 
 
 
+Running code which already uses any \texttt{apply} family function on multiple
+cores requires only a few modifications, such as setting up the core cluster at
+the beginning of the script and converting the \emph{apply} calls to the
+corresponding \emph{parApply} calls.
+
+Running code which is already working fine but without using any \emph{apply}
+function yet requires a bit more work to refactor it before being able to use
+it on multiple cores, but even then the amount of work is relatively minor and
+involves mainly a wrapping of the analysis into a main function and a storage
+of the data into a suitable list structure.
+
+
+
+\section{What will be done in this tutorial}
+%-------------------------------------------
+
+
+
 This tutorial will focus on using the \texttt{list} object to store data and
-the \texttt{lapply} and \texttt{parLapply} functions to apply a function on 
-each element of a list. The first part of the tutorial is about the 
-\texttt{list} object structure and how to use it. The next part will describe
-how to run a script using \texttt{lapply} on several cores on a local computer.
-Finally, the last part will show how to run parallel code on CSC servers.
+the \texttt{lapply} and \texttt{parLapply} functions to apply a function on
+each element of a list.
+
+The tutorial is organized as follows:
+
+\begin{itemize}
+\item The first part is about the \texttt{list} object structure and how to use
+  it.
+\item The second part will describe how to run a script using the \texttt{snow}
+  package on several cores on a local computer.
+\item The third part will show how to run the same parallel code on CSC
+  servers, using up to 16 cores on Taito.
+\item The fourth part will explain how to use more than 16 cores on CSC servers
+  using the \texttt{Rmpi} package.
+\end{itemize}
+
 
 The appendix contains some useful material concerning code benchmarking.
 

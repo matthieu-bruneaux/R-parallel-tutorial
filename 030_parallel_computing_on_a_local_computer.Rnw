@@ -66,6 +66,11 @@ used:
 
 
 
+\subsubsection{Aim of the analysis}
+%----------------------------------
+
+
+
 We will illustrate the basic setup for parallel computing on a local computer
 by bootstrapping regression models using the \texttt{cars} dataset. 
 
@@ -112,6 +117,13 @@ regression model. To do this, we perform a bootstrap:
   \item Based on the distribution of those $n$ slopes, we determine the 95\% 
   confidence interval of the real slope.
 \end{itemize}
+
+
+
+\subsubsection{Strategy}
+%-----------------------
+
+
 
 We need to apply the regression model on many bootstrap resamples. In this case,
 each linear regression on a bootstrap resample is independent from the other

@@ -1,5 +1,5 @@
-\section{Parallel computing on CSC servers}
-%------------------------------------------
+\chapter{Parallel computing on CSC servers (\texttt{snow} library)}
+%------------------------------------------------------------------
 
 
 
@@ -12,7 +12,7 @@ to \texttt{taito} and set up the job to be run.
 
 
 
-\subsection{Preparing the script locally}
+\section{Preparing the script locally}
 %----------------------------------------
 
 
@@ -33,6 +33,10 @@ simulate a trial (1000000 flippings):
 toss.coin = function(i = 0) {
   # This function takes one dummy argument in order to be callable by 
   # parLapply, but does not use it.
+  # In addition, we specify a default value for i so that the 
+  # function can also be called without argument, outside a lapply
+  # context.
+  
   # Simulate the trial
   trial = sample(c("H", "T"), size = 1000000, replace = T)
   # return the proportion of heads
@@ -80,7 +84,8 @@ bmk
 @
 
 The parallel run is faster than the serial run. The script works and is ready 
-to be copied to \texttt{taito}.
+to be copied to \texttt{taito}. The main change is that we can now use up to 
+16 cores for the parallel run (a full node on \texttt{taito}).
 
 The script \texttt{flipping.coins.R} is:
 
@@ -109,7 +114,8 @@ index = as.list(1:100)
 # here we use system.time to time the execution of the simulations
 # we have to enclose the expression to time between { and }
 # print will force the output to stdout
-print(system.time({simulations = parLapply(cluster, index, toss.coin)}))
+print(system.time({simulations = parLapply(cluster, index, 
+                                           toss.coin)}))
 
 # save the results
 write.table(unlist(simulations), "flipping.coins.results")
@@ -120,8 +126,8 @@ stopCluster(cluster)
 
 
 
-\subsection{Setting up the script on Taito}
-%------------------------------------------
+\section{Setting up the script on Taito}
+%---------------------------------------
 
 
 
@@ -131,14 +137,15 @@ the server. Let's assume your login is \texttt{toto} and your password
 \texttt{1234}.
 
 You can connect to a remote terminal on the server by using Putty on Windows or
-the simple command \verb+ssh toto@taito.csc.fi+ from a Linux terminal. From the
-remote terminal, you can start jobs and examine the results of the jobs. To
-move files to and from Taito, the easiest way is to use a SFTP client.
+the simple command \verb+ssh toto@taito.csc.fi+ from a Mac or GNU/Linux
+terminal. From the remote terminal, you can start jobs and examine the results
+of the jobs. To move files to and from Taito, the easiest way is to use a SFTP
+client.
 
 
 
-\subsubsection{Copying a file to Taito}
-%--------------------------------------
+\subsection{Copying a file to Taito}
+%-----------------------------------
 
 
 
@@ -151,13 +158,13 @@ Once you are connected to Taito with the client, you can create a new folder
 
 
 
-\subsubsection{Preparing the sbatch file}
-%----------------------------------------
+\subsection{Preparing the sbatch file}
+%-------------------------------------
 
 
 
 Each job request on Taito is processed by \texttt{sbatch}. To make a request,
-we can to wrap the call to the R script in a small script which can be used by
+we have to wrap the call to the R script in a small script which can be used by
 \texttt{sbatch}. More information is available 
 \href{http://research.csc.fi/taito-batch-jobs}{on the CSC website}.
 
@@ -187,15 +194,20 @@ Rscript --vanilla flipping.coins.R
 \item All the lines starting with \verb+#SBATCH+ are comments which are used
   by \texttt{sbatch} to process the job request.
 \item -J: name of the job
-\item -o: file where output is redirected (\%J is a placeholder for the job id)
-\item -e: file where errors are redirected
+\item -o: file to which output is redirected (\%J is a placeholder which will be 
+  replaced by the job id during the run).
+\item -e: file to which errors are redirected
 \item -t: time request for the job. The job will be killed if it goes beyond 
-  that time limit.
+  that time limit. The format is \texttt{hh:mm:ss}.
 \item -n: number of task run by the job
-\item --nodes: number of node requested. I have only tried to use one node with
-  \texttt{snow}, I don't know if it can handle more than one node.
+\item --nodes: number of node requested. Using \texttt{snow} as it is explained 
+  in this tutorial, you cannot use more than one node (but it might be possible
+  to do it with \texttt{snow} by creating a different type of cluster). If you
+  want to use more than one node, you can read the next section which uses
+  \texttt{Rmpi} to run a script with more than one node.
 \item --cpus-per-task: number of cores used by the script. One node on Taito has
-  16 cores, so \texttt{snow} can be run with 16 cores specified in the R script.
+  16 cores, so \texttt{snow} can be run with at most 16 cores (specified in the 
+  R script during the cluster initialization).
 \item --mem-per-cpu: each node in Taito has 64 Go of memory. If one uses all 16
   cores of a node, then each core can use up to 4000 Mo of memory.
 \item --mail-type and --mail-user: useful to get information about when the job
@@ -214,8 +226,8 @@ The R script is executed using:
 
 
 
-\subsection{Running a job}
-%-------------------------
+\section{Running a job}
+%----------------------
 
 
 
@@ -245,8 +257,8 @@ to \texttt{errors\_xxx}, where \text{xxx} is the job id.
 
 
 
-\subsection{Comparison with a serial job}
-%----------------------------------------
+\section{Comparison with a serial job}
+%-------------------------------------
 
 
 
@@ -302,7 +314,7 @@ Rscript --vanilla flipping.coins.serial.R
 
 During my tests, the execution time was 0.656s with a parallel process and 
 6.242s with a serial job. The improvement is about 10 fold, which is less than
-expected based on the number of cores used (16), but again in this case the
+expected based on the number of cores used (16), but  in this case the
 analysis is a short one and the overhead of the distribution of the analyses on
 the cores might not be negligible compared to the analysis time itself. However,
 analyses that need to be run in parallel are typically long ones for which this

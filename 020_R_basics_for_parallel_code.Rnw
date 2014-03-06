@@ -8,7 +8,7 @@ data stored as list and the \texttt{lapply} approach. It covers list
 creation and manipulation and \texttt{lapply} call.
 
 If you are already familiar with lists and \texttt{lapply}, you can skip it and
-go directly to the next section.
+go directly to section \ref{section.parallel.local.computer}.
 
 
 

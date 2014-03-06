@@ -83,7 +83,11 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-\SweaveInput{040_parallel_computing_on_CSC_servers.Rnw}
+\SweaveInput{040_parallel_computing_on_CSC_servers_with_snow.Rnw}
+
+\clearpage
+
+\SweaveInput{045_parallel_computing_on_CSC_servers_with_Rmpi.Rnw}
 
 \clearpage
 

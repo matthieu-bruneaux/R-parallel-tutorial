@@ -1,4 +1,4 @@
-\section{Approaches to speed-up R code}
+\chapter{Approaches to speed-up R code}
 %--------------------------------------
 
 

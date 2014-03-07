@@ -73,7 +73,7 @@ be distributed on multiple cores.
   \label{fig.comparison.single.multiple.cores}
 \end{figure}
 
-One quick-and-dirty way for using several cores with \R\ is to manually start as 
+One quick-and-dirty way to use several cores with \R\ is to manually start as 
 many \R\ sessions as available cores. However, when scaling an analysis to 16, 32 
 or more cores on a computer grid, manually starting and managing \R\ scripts 
 is not a good option. A much more simple, robust and elegant solution is to 
@@ -86,14 +86,17 @@ use one of the \R\ packages for parallel computing.
 
 
 
-The aim of this document is to provide a step-by-step guide of how to use 
-one approach which was tested and worked for some analyses performed on a 
-local computer with multiple cores and on the CSC servers (\url
-{http://research.csc.fi/}). A lot of detailed resources are already 
-available concerning parallel computing with \R. One can look through the 
-documentation of the corresponding packages or have a look on GitHub and 
-search for \href {https://github.com/search?q=r+parallel&ref=cmdform}{\texttt
-{'parallel R'}}.
+The aim of this document is to provide a step-by-step guide of how to use
+parallel computing with \R. At the end of this tutorial, you should be able to
+take advantage of the multiple cores of your laptop or of your desktop
+computer, or to use 16, 32 or more cores on the CSC server Taito (\url
+{http://research.csc.fi/taito-user-guide}) for larger parallel runs.
+
+A lot of detailed resources concerning parallel computing with \R are already
+available and easily found on the Internet. One can look through the
+documentation of the corresponding packages or have a look on GitHub and search
+for \href {https://github.com/search?q=r+parallel&ref=cmdform}{\texttt
+  {'parallel R'}}.
 
 
 
@@ -103,14 +106,14 @@ search for \href {https://github.com/search?q=r+parallel&ref=cmdform}{\texttt
 
 
 A list of useful packages can be found on the \href
-{http://cran.r-project.org/web/views/HighPerformanceComputing.html}{CRAN 
-webpage} concerning \R\ and high performance computing. There are  many 
-different options; I will focus on the \texttt{snow} package since I managed 
-to use this one both on a CSC server (Taito) and on my desktop computer and 
-its setup is quite simple. The approach described here with \texttt{snow}
-works well with a personal computer or when using a single node on Taito
-(each Taito node contains 16 cores), but for analyses using multiple nodes
-(e.g. 32 or 64 cores) we will use the \texttt{Rmpi} package.
+{http://cran.r-project.org/web/views/HighPerformanceComputing.html}{CRAN
+  webpage} concerning \R\ and high performance computing. There are many
+different options; I will mainly focus on the \texttt{snow} package since I
+managed to use this one both on a CSC server (Taito) and on my desktop computer
+and its setup is quite simple. The approach described here with \texttt{snow}
+works well with a personal computer or when using a single node on Taito (each
+Taito node contains 16 cores), but for analyses using multiple nodes (e.g. 32
+or 64 cores) we will use the \texttt{Rmpi} package.
 
 
 
@@ -119,7 +122,7 @@ works well with a personal computer or when using a single node on Taito
 
 
 
-The approach explained in this document relies on the use of the \emph {apply}
+The approach explained in this document relies on the use of the \emph{apply}
 family of functions in \R. Those functions are \texttt{apply}, \texttt{sapply}
 and \texttt{lapply} and are part of the \texttt{base} package. They are seldom
 used by \R\ users when they just start to learn \R, but they are of
@@ -152,7 +155,7 @@ sapply(v, f)
 sapply(5:15, f)
 @
 
-\texttt{apply}, \texttt{sapply} and \texttt{lapply} differ in the type of
+\texttt{sapply}, \texttt{lapply} and \texttt{apply} differ in the type of
 objects on which they work:
 \begin{itemize}
 \item \texttt{sapply} will apply a function on each element of a \emph{vector}
@@ -163,16 +166,16 @@ Since those functions work on each element of an object independently from the
 other elements, they are easily amenable to parallelization. This is done in a
 very simple manner with the \texttt{snow} package: the function names just have
 to be replaced with the corresponding \texttt{parSapply}, \texttt{parLapply} or
-\texttt{parApply} parallelized functions.
+\texttt{parApply} parallelized function names.
 
 An efficient use of \texttt{sapply}, \texttt{lapply} and \texttt{apply}
 requires a good understanding of the \texttt{vector}, \texttt{list} and
 \texttt{matrix} or \texttt{data.frame} objects. In particular, we will be using
-the list object which is very versatile but might seem a bit daunting to users
-without any prior experience with it.
+the \texttt{list} object which is very versatile but might seem a bit daunting
+to users without any prior experience with it.
 
-Using the \texttt{apply} family of functions tends to produce cleaner and
-better code - cleaner since the user has to structure the data efficiently into
+Using the \emph{apply} family of functions tends to produce cleaner and better
+code - cleaner since the user has to structure the data efficiently into
 e.g. lists and to divide its code into separate functions, and better because
 the code is easier to read and to debug - and is of interest even for code
 which is not intended to be used on multiple cores.
@@ -184,7 +187,7 @@ which is not intended to be used on multiple cores.
 
 
 
-Running code which already uses any \texttt{apply} family function on multiple
+Running code which already uses any \emph{apply} family function on multiple
 cores requires only a few modifications, such as setting up the core cluster at
 the beginning of the script and converting the \emph{apply} calls to the
 corresponding \emph{parApply} calls.

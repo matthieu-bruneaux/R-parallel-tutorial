@@ -7,7 +7,7 @@
 
 
 
-The use of the \textt{snow} library described in this tutorial does not allow
+The use of the \texttt{snow} library described in this tutorial does not allow
 to use more than one node for a parallel run, and thus limits the number of
 cores that can be used on \texttt{Taito} to 16. It might be possible to go
 beyond this limit using \texttt{snow}, but I didn't find how to use it for this
@@ -72,7 +72,7 @@ mpi.quit()
 
 The differences are:
 \begin{itemize}
-  \item We use \texttt{library(Rmpi)} instead of \texttt{library{snow}).
+  \item We use \texttt{library(Rmpi)} instead of \texttt{library(snow)}.
   \item We don't have to initialize the cluster and to specify a number of 
     cores: \texttt{Rmpi} will use the available cores when the library is 
     loaded. The number of cores is thus entirely determined in the 
@@ -124,3 +124,93 @@ The differences with the previous \texttt{sbatch} file are:
 
 We also have to be careful about specifying the same number of requested cores
 for the \texttt{srun} command.
+
+
+
+\section{Running a job}
+%----------------------
+
+
+
+Our project folder on Taito now contains two files:
+\begin{itemize}
+  \item The R script \texttt{flipping.coins.Rmpi.R}
+  \item The sbatch file \texttt{R.Rmpi.sh}
+\end{itemize}
+
+We can submit the job as usual by typing:
+\begin{verbatim}sbatch R.Rmpi.sh\end{verbatim}
+
+
+
+\section{Random number generation with Rmpi}
+%-------------------------------------------
+
+
+
+To illustrate how to generate random numbers with \texttt{Rmpi}, here is a small
+R script generating random numbers and writing them to a file:
+
+<<echo=TRUE, eval=FALSE>>=
+# RNG.Rmpi.R
+
+# generate random numbers and write them to a file
+
+# function to generate the random numbers
+generate.random = function(i = 0) {
+  # again, i is just a dummy parameter so that the function can be 
+  # called by lapply or mpi.parLapply
+  rnorm(1)
+}
+
+# initialize the cluster
+library(Rmpi)
+mpi.setup.rngstream() # initialize the RNG on each core
+
+
+# run
+index = as.list(1:128)
+results = mpi.parLapply(index, generate.random)
+
+# save the results
+write.table(unlist(results), "random.numbers.Rmpi")
+
+# stop the cluster
+mpi.close.Rslaves()
+mpi.quit()
+@
+
+Here is the corresponding sbatch file:
+
+\begin{Schunk}
+\begin{Sinput}
+#!/bin/bash -l
+#SBATCH -J Rmpi
+#SBATCH -o output_%J.txt
+#SBATCH -e errors_%J.txt
+#SBATCH -t 0:05:00
+#SBATCH -n 64
+#SBATCH -p parallel
+#SBATCH --mem-per-cpu=4000
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=toto@utu.fi
+
+module load R.latest/latest
+srun -u -n 64 Rmpi --no-save < RNG.Rmpi.R
+\end{Sinput}
+\end{Schunk}
+
+Using this script generates 128 different numbers, which means that each
+core generated different random numbers.
+
+Running this script twice will result in a different set of 128 numbers. This is
+because \texttt{mpi.setup.rngstream()} is called without any argument. To set up
+reproducible RNG on each core, we can use:
+\begin{verbatim}mpi.setup.rngstream(iseed = 4)\end{verbatim}
+
+This will ensure that the same set of 128 random numbers is generated for each
+run. As is explained in \texttt{mpi.setup.rngstream} help, \texttt{iseed} can 
+take any integer, and if set to \texttt{NULL} (the default value) non 
+reproducible random numbers will be generated.
+
+

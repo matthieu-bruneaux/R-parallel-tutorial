@@ -1,9 +1,9 @@
-\chapter{Parallel computing on CSC servers, more than one node (\texttt{Rmpi} library)}
-%--------------------------------------------------------------------------------------
+\chapter{Parallel computing on CSC servers, using more than 16 cores (\texttt{Rmpi} library)}
+%--------------------------------------------------------------------------------------------
 
 
 
-\chaptermark{Parallel computing on CSC servers (\texttt{Rmpi})}
+\chaptermark{Parallel computing on CSC servers (\texttt{Rmpi} library)}
 
 
 
@@ -21,11 +21,11 @@ The \texttt{Rmpi} library can be used in the same way as \texttt{snow}:
   \item Run the analysis using a parallelized version of \texttt{lapply}.
 \end{itemize}
 
-The differences are thus extremely small and a script which is running
-successfully with \texttt{lapply} or \texttt{parLapply} from \texttt{snow} can
-be modified to run with \texttt{Rmpi} in a few minutes. The advantage is that
-several nodes can then be requested on \texttt{Taito}, enabling to use e.g. 32
-or 64 cores at a time.
+The differences are extremely small and a script which is running successfully
+with \texttt{lapply} or \texttt{parLapply} with \texttt{snow} can be modified
+to run with \texttt{Rmpi} in a few minutes. The advantage is that several nodes
+can then be requested on \texttt{Taito}, enabling to use e.g. 32 or 64 cores at
+a time.
 
 
 
@@ -35,7 +35,7 @@ or 64 cores at a time.
 
 
 We use the same coin-flipping script as in the previous section with minor
-modifications (\texttt{flipping.conis.Rmpi.R}).
+modifications (\texttt{flipping.coins.Rmpi.R}).
 
 <<echo=TRUE, eval=FALSE>>=
 # flipping.coins.Rmpi.R
@@ -73,8 +73,8 @@ mpi.quit()
 The differences are:
 \begin{itemize}
   \item We use \texttt{library(Rmpi)} instead of \texttt{library(snow)}.
-  \item We don't have to initialize the cluster and to specify a number of 
-    cores: \texttt{Rmpi} will use the available cores when the library is 
+  \item We don't have to initialize the cluster and to specify the number of 
+    cores: \texttt{Rmpi} will use all the available cores when the library is 
     loaded. The number of cores is thus entirely determined in the 
     \texttt{sbatch} file for the job submission.
   \item We use \texttt{mpi.parLapply} instead of \texttt{parLapply} and we 
@@ -122,8 +122,8 @@ The differences with the previous \texttt{sbatch} file are:
     it actually started.
 \end{itemize}
 
-We also have to be careful about specifying the same number of requested cores
-for the \texttt{srun} command.
+Note: We have to be careful and specify the same number of requested cores
+between the \texttt{-n} option and the \texttt{srun} command (last line).
 
 
 
@@ -205,7 +205,7 @@ core generated different random numbers.
 
 Running this script twice will result in a different set of 128 numbers. This is
 because \texttt{mpi.setup.rngstream()} is called without any argument. To set up
-reproducible RNG on each core, we can use:
+reproducible RNG between different runs, we can use:
 \begin{verbatim}mpi.setup.rngstream(iseed = 4)\end{verbatim}
 
 This will ensure that the same set of 128 random numbers is generated for each

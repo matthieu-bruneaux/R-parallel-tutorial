@@ -1,5 +1,10 @@
-\chapter{Parallel computing on CSC servers (\texttt{snow} library)}
-%------------------------------------------------------------------
+\chapter{Parallel computing on CSC servers (using the \texttt{snow} library, up 
+  to 16 cores)}
+%------------------------------------------------------------------------------
+
+
+
+\chaptermark{Parallel computing on CSC servers (\texttt{snow} library)}
 
 
 
@@ -191,27 +196,27 @@ Rscript --vanilla flipping.coins.R
 
 \begin{itemize}
 \item The first line indicates that it is a bash script (\verb+#!/bin/bash+).
-\item All the lines starting with \verb+#SBATCH+ are comments which are used
-  by \texttt{sbatch} to process the job request.
-\item -J: name of the job
-\item -o: file to which output is redirected (\%J is a placeholder which will be 
-  replaced by the job id during the run).
-\item -e: file to which errors are redirected
-\item -t: time request for the job. The job will be killed if it goes beyond 
-  that time limit. The format is \texttt{hh:mm:ss}.
-\item -n: number of task run by the job
-\item --nodes: number of node requested. Using \texttt{snow} as it is explained 
-  in this tutorial, you cannot use more than one node (but it might be possible
-  to do it with \texttt{snow} by creating a different type of cluster). If you
-  want to use more than one node, you can read the next section which uses
-  \texttt{Rmpi} to run a script with more than one node.
-\item --cpus-per-task: number of cores used by the script. One node on Taito has
-  16 cores, so \texttt{snow} can be run with at most 16 cores (specified in the 
-  R script during the cluster initialization).
-\item --mem-per-cpu: each node in Taito has 64 Go of memory. If one uses all 16
-  cores of a node, then each core can use up to 4000 Mo of memory.
-\item --mail-type and --mail-user: useful to get information about when the job
-  starts or ends.
+\item All the lines starting with \verb+#SBATCH+ are comments which are used by
+  \texttt{sbatch} to process the job request.
+\item \verb+-J+: name of the job
+\item \verb+-o+: file to which output is redirected (\%J is a placeholder which
+  will be replaced by the job id during the run).
+\item \verb+-e+: file to which errors are redirected
+\item \verb+-t+: time request for the job. The job will be killed if it goes
+  beyond that time limit. The format is \texttt{hh:mm:ss}.
+\item \verb+-n+: number of task run by the job
+\item \verb+--nodes+: number of node requested. Using \texttt{snow} as it is
+  explained in this tutorial, you cannot use more than one node (but it might
+  be possible to do it with \texttt{snow} by creating a different type of
+  cluster). If you want to use more than one node, you can read the next
+  section which uses \texttt{Rmpi} to run a script with more than one node.
+\item \verb+--cpus-per-task+: number of cores used by the script. One node on
+  Taito has 16 cores, so \texttt{snow} can be run with at most 16 cores
+  (specified in the R script during the cluster initialization).
+\item \verb+--mem-per-cpu+: each node in Taito has 64 Go of memory. If one uses
+  all 16 cores of a node, then each core can use up to 4000 Mo of memory.
+\item \verb+--mail-type+ and \verb+--mail-user+: useful to get information
+  about when the job starts or ends.
 \item The last two lines are the actual job and are executed by the shell.
 \end{itemize}
 

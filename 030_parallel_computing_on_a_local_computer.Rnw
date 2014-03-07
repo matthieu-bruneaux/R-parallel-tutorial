@@ -1,5 +1,5 @@
-\chapter[Parallel computing on a local computer (\texttt{snow} library)]
-        {Parallel computing on a local computer (\texttt{snow}
+\chapter[Parallel computing on a local computer (using the \texttt{snow} library)]
+        {Parallel computing on a local computer (using the \texttt{snow}
           library)
           \footnote{The examples given in this section assume a good
             knowledge of the R basics, including loops, linear models
@@ -57,7 +57,8 @@ used:
 \begin{itemize}
   \item Generate bootstrap resamples, store them in a list and apply the
     analysis function on each element of the list to obtain a parameter
-    distribution for the bootstrap resamples.
+    distribution for the bootstrap resamples (this is the approach we will
+    use here).
   \item Store indices in a list (e.g. from 1 to 10000), and apply the analysis
     function to them. In this case the bootstrap resample generation is done
     within the analysis function, and the memory needs are reduced.
@@ -87,7 +88,7 @@ that there should be a linear relationship between the square of the speed
 $v^2$ and the stopping distance $d$ (if we assumes the cars weighed the same).
 
 <<>>=
-str(cars)
+head(cars)
 # calculate v^2
 cars$speed.squared = cars$speed ^ 2
 # fit a linear regression on the observed data
@@ -150,13 +151,13 @@ in parallel. The steps we are going to follow are:
 
 
 <<echo=FALSE>>=
-n.bootstrap = 100
+n.bootstrap = 500
 @
 
 \Sexpr{n.bootstrap} bootstrap resamples are generated and stored into a list.
 
 <<>>=
-n.bootstrap = 100
+n.bootstrap = 500
 # create an empty list
 resamples = list()
 # generate the resamples
@@ -169,7 +170,6 @@ for (i in 1:n.bootstrap) {
 # we now have our bootstrap resamples ready
 length(resamples)
 head(resamples[[1]])
-head(resamples[[n.bootstrap]])
 # the first column is the original row number in the cars 
 # data frame. A ".1" is appended when the row is sampled
 # multiple times in a resampled set.
@@ -186,11 +186,11 @@ The function used for the analysis of each resample is very simple: it fits a
 linear model to the resample and returns the linear model.
 
 <<>>=
-linear.fit = function(car.data) {
+linear.fit = function(resample.cars) {
   # calculate speed.squared
-  car.data$speed.squared = car.data$speed ^ 2
+  resample.cars$speed.squared = resample.cars$speed ^ 2
   # linear model
-  model.resample = lm(car.data$dist ~ car.data$speed.squared)
+  model.resample=lm(resample.cars$dist ~ resample.cars$speed.squared)
   # return the model
   model.resample
 }
@@ -246,7 +246,7 @@ bootstrap.slopes = lapply(bootstrap.models,
                           function(x) x$coefficients[2])
 @
 
-The output of lapply is a list. We can convert it to a vector using
+The output of \texttt{lapply} is a list. We can convert it to a vector using
 \texttt{unlist} and dropping the names of the elements.
 
 <<>>=
@@ -284,8 +284,8 @@ quantile(bootstrap.slopes, probs = c(0.025, 0.975))
 plot(cars$speed.squared, cars$dist, bty = "n", las = 1, pch = 21, bg = "grey",
      xlab = "speed.squared", ylab = "dist", type = "n")
 a = lapply(bootstrap.models, function(x) abline(x$coefficients, 
-                                col = adjustcolor("dodgerblue", 
-                                                  1/(max(n.bootstrap/5, 10)))))
+                                col = adjustcolor("blue", 
+                                                  1/(max(n.bootstrap/50, 10)))))
 points(cars$speed.squared, cars$dist, las = 1, pch = 21, 
        bg = "grey")
 abline(model.observed, col = "red", lwd = 2)
@@ -395,6 +395,7 @@ head.frequencies = lapply(simulations,
                           function(x) sum(x == "H") / length(x))
 # convert the result to a vector
 head.frequencies = unlist(head.frequencies)
+head.frequencies[1:10]
 # calculate the mean and standard deviation
 mean(head.frequencies)
 sd(head.frequencies)
@@ -448,11 +449,11 @@ call it:
 h
 @
 
-Now it works. The reason is that we defined \texttt{h} in our current workspace,
-but when the cluster is initialized, each node has its own workspace. Only the
-list elements it is working on and the function used by \texttt{parLapply} are
-sent to each node, and it does not see the global environment of the calling
-workspace.
+The object does exist, but is not found by the cluster. The reason is that we
+defined \texttt{h} in our current workspace, but when the cluster is
+initialized, each node has its own workspace. Only the list elements it is
+working on and the function used by \texttt{parLapply} are sent to each node,
+and it does not see the global environment of the calling workspace.
 
 If we want the nodes to know about a variable, we have to explicitly send it
 to them.
@@ -483,7 +484,7 @@ package will be loaded with the package.
 
 When performing analyses which rely on random number generation, such as 
 bootstrapping, it is important to ensure that each core will produce an
-independent stream of random number, otherwise the parallel runs which just
+independent stream of random numbers, otherwise the parallel runs will just
 be exact replicates of each other.
 
 The \texttt{snow} library provides functions to initialize independent random
@@ -496,7 +497,7 @@ exactly identical RNG on each node.
 # load the library
 library(snow)
 # set up the cluster
-n.cores = 3 # max 16
+n.cores = 3
 cluster = makeSOCKcluster(rep("localhost", n.cores))
 # define a function using random number
 f = function(x) {
@@ -534,7 +535,8 @@ unlist(a)
 @
 
 This gives different numbers among the cores. It looks like we don't actually 
-need to initialize different seeds on the cores to have different streams.
+need to initialize different seeds on the cores to have different streams, this
+might be done automatically when the cluster is set up.
 
 If we run again the same code:
 
@@ -558,7 +560,7 @@ the cluster initialization. It looks like the seed state outside the
 cluster has no effect on the RNG on each core.
 
 I didn't dig into it further, but more information about reproducible RNG for 
-parallel computing could be found with the \texttt{snowFT} package; see also 
+parallel computing can be found with the \texttt{snowFT} package; see also 
 this \href{https://stat.ethz.ch/pipermail/r-sig-hpc/2011-January/000895.html}
 {post}.
 
@@ -621,6 +623,9 @@ a = parLapply(cluster, x, f)
 stopCluster(cluster)
 unlist(a)
 @
+
+This is particularly interesting when we want to ensure reproducibility between
+different runs: we can just use the same seed for \texttt{clusterSetupRNG}.
 
 We can also make it different between successive runs by using the time as the
 seed:

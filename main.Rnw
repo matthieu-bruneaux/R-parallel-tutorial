@@ -91,17 +91,17 @@ unloadNamespace("SweaveListingUtils")
 
 \clearpage
 
-\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
+%\SweaveInput{050_approaches_to_speed_up_R_code.Rnw}
 
-\clearpage
+%\clearpage
 
-\backmatter
+%\backmatter
 
-\appendix
+%\appendix
 
-\clearpage
+%\clearpage
 
-\SweaveInput{A_010_benchmarking.Rnw}
+%\SweaveInput{A_010_benchmarking.Rnw}
 
 
 

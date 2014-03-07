@@ -220,7 +220,4 @@ The tutorial is organized as follows:
 \end{itemize}
 
 
-The appendix contains some useful material concerning code benchmarking.
-
-
 

@@ -3,10 +3,12 @@ Using R in parallel with the snow package - Tutorial
 
 
 
-Tutorial about using R in parallel for computers with multiple cores or 
-on server nodes.
+(The tutorial file is *r_parallel_tutorial.pdf*)
 
-Based on the snow package in R.
+Tutorial about using R in parallel for computers with multiple cores or 
+on server nodes (using the CSC server Taito).
+
+Based on the snow and Rmpi packages in R.
 
 Written with Sweave.
 

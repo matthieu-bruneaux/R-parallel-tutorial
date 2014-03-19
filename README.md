@@ -3,7 +3,7 @@ Using R in parallel with the snow package - Tutorial
 
 
 
-(The tutorial file is *r_parallel_tutorial.pdf*)
+(The tutorial file is **r_parallel_tutorial.pdf**)
 
 Tutorial about using R in parallel for computers with multiple cores or 
 on server nodes (using the CSC server Taito).
